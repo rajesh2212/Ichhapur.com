@@ -18,15 +18,6 @@
   if (!MD) { return; }
   var U = MD.util;
 
-  /* Dark page, so the stand-in drawings must be the dark set. */
-  U.useTradeArt({
-    medicines: "assets/img/dark/medicines.svg",
-    mobile: "assets/img/dark/mobile.svg",
-    general: "assets/img/dark/general.svg",
-    market: "assets/img/dark/market.svg",
-    service: "assets/img/dark/service.svg"
-  });
-
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
@@ -35,6 +26,25 @@
     if (cls) n.className = cls;
     if (text != null) n.textContent = text;
     return n;
+  }
+
+  /* ----------------------------------------------------------- trade colours
+     One hue per trade, defined in admin.css as .cat-<id>. The hue always sits
+     beside the trade written out in words, so it is never the only label, and a
+     trade with no CSS class of its own falls back to the :root value. */
+  function catClass(id) {
+    var known = !!(DATA && DATA.categories) &&
+      DATA.categories.some(function (c) { return c.id === id; });
+    return "cat-" + (known ? id : "general");
+  }
+
+  function paintCat(node, id) {
+    if (!node) return;
+    (DATA && DATA.categories ? DATA.categories : []).forEach(function (c) {
+      node.classList.remove("cat-" + c.id);
+    });
+    node.classList.remove("cat-none");
+    node.classList.add(id ? catClass(id) : "cat-none");
   }
 
   /* ------------------------------------------------------------------ state */
@@ -47,6 +57,7 @@
 
   /* ------------------------------------------------------------------ toast */
   var toastTimer = null;
+  var firstDraw = true;
   function toast(msg, bad) {
     var t = $("#toast");
     t.textContent = msg;
@@ -67,7 +78,8 @@
       ? "Local draft: " + (used / 1024).toFixed(0) + " KB of the " +
         (MD.MAX_BYTES / 1024 / 1024).toFixed(1) + " MB this browser allows (" + pct + "%)."
       : "No local draft yet — the published file is being shown.";
-    meter.classList.toggle("is-near", pct > 80);
+    meter.classList.toggle("is-near", pct > 80 && pct <= 95);
+    meter.classList.toggle("is-over", pct > 95);
 
     var when = $("#admSavedAt");
     if (DATA && DATA.local && DATA.savedAt) {
@@ -114,7 +126,7 @@
   }
 
   function buildRow(store, i) {
-    var tr = el("tr");
+    var tr = el("tr", catClass(store.category));
 
     var tdImg = el("td", "c-img");
     var img = U.thumb(store, "rowimg");
@@ -130,7 +142,9 @@
     if (store.photo) tdName.appendChild(el("span", "rowid", "photo attached"));
     tr.appendChild(tdName);
 
-    tr.appendChild(el("td", "dim", U.catLabel(DATA.categories, store.category)));
+    var tdCat = el("td");
+    tdCat.appendChild(el("span", "tag tag--cat", U.catLabel(DATA.categories, store.category)));
+    tr.appendChild(tdCat);
 
     var tdStatus = el("td");
     tdStatus.appendChild(el("span", "tag " + (U.needsConfirmation(store) ? "tag--warn" : "tag--ok"),
@@ -172,6 +186,14 @@
     });
     $("#admEmpty").hidden = shown !== 0;
 
+    /* the rows come in once, with the list. Every later redraw is a keystroke in
+       the filter or a save, and re-animating the table for those reads as flicker. */
+    if (firstDraw) {
+      firstDraw = false;
+      body.classList.add("is-fresh");
+      setTimeout(function () { body.classList.remove("is-fresh"); }, 900);
+    }
+
     var total = DATA.stores.length;
     var checks = DATA.stores.filter(U.needsConfirmation).length;
     var txt = shown + " of " + total + " listing" + (total === 1 ? "" : "s") +
@@ -182,6 +204,7 @@
 
   function renderAll() {
     fillCategorySelects();
+    paintCat($("#admCatField"), $("#admCat").value);
     renderList();
     renderMeter();
   }
@@ -377,6 +400,20 @@
   }
 
   /* --- open / close ------------------------------------------------------- */
+  /* The card wears the trade it is editing — border, photo frame, and the trade
+     and status selects — so opening a row and reading the table agree. */
+  function paintEditor() {
+    var cat = field("cat") ? field("cat").value : "";
+    var stat = field("status") ? field("status").value : "";
+    paintCat($("#editor"), cat);
+    paintCat(field("cat") ? field("cat").closest(".field") : null, cat);
+    var statField = field("status") ? field("status").closest(".field") : null;
+    if (statField) {
+      statField.classList.toggle("is-warn", stat !== "listed");
+      statField.classList.toggle("is-ok", stat === "listed");
+    }
+  }
+
   function openEditor(index) {
     var store = index < 0 ? U.blankStore() : DATA.stores[index];
     var a = document.activeElement;
@@ -391,6 +428,7 @@
     setVal("id", store.id);
     field("cat").value = store.category || "general";
     field("status").value = U.needsConfirmation(store) ? "needs-confirmation" : "listed";
+    paintEditor();
     setVal("locality", store.locality);
     setVal("address", store.addressLine);
     setVal("link", store.coordinates ? store.coordinates.lat + ", " + store.coordinates.lng : "");
@@ -592,13 +630,18 @@
       filters.q = this.value.trim().toLowerCase();
       renderList();
     });
-    $("#admCat").addEventListener("change", function () { filters.cat = this.value; renderList(); });
+    $("#admCat").addEventListener("change", function () {
+      filters.cat = this.value;
+      paintCat($("#admCatField"), this.value);
+      renderList();
+    });
     $("#admStatus").addEventListener("change", function () { filters.status = this.value; renderList(); });
     $("#btnClear").addEventListener("click", function () {
       filters = { q: "", cat: "", status: "" };
       $("#admSearch").value = "";
       $("#admCat").value = "";
       $("#admStatus").value = "";
+      paintCat($("#admCatField"), "");
       renderList();
     });
 
@@ -609,6 +652,14 @@
     });
     $("#edForm").addEventListener("submit", saveForm);
     $("#edForm").addEventListener("input", function () { dirty = true; });
+
+    /* changing the trade re-paints the card and swaps the stand-in drawing */
+    ["#fCat", "#fStatus"].forEach(function (sel) {
+      $(sel).addEventListener("change", function () {
+        paintEditor();
+        if (sel === "#fCat") showPhoto();
+      });
+    });
 
     $("#btnAddSrc").addEventListener("click", function (ev) {
       ev.preventDefault();

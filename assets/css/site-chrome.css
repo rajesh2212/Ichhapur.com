@@ -1,31 +1,58 @@
 /* ============================================================================
-   ICHHAPUR Market — shared page chrome
+   ICHHAPUR Market — shared page chrome + the site's one colour system
    ----------------------------------------------------------------------------
    The masthead, the back bar and the footer are identical on every page, so
    they live in one stylesheet and one script instead of being copied around.
 
-   The colours are declared on the chrome elements themselves rather than on
-   :root. That is deliberate: the guide (index.html) is a light cream page that
-   loads this file for its header, and a :root block here would repaint its
-   body text with dark-theme values.
+   This file also carries the `:root` colour tokens. Every page loads it, and
+   every page is now the same warm daylight theme, so the tokens are global
+   rather than scoped to the chrome. (They used to sit on `.masthead, .backbar,
+   .dk-foot` because the header was dark and the guide beneath it was light —
+   that split is gone, so the scoping went with it.)
+
+   Palette read off the reference: warm taupe/cream ground, white cards, one
+   near-black for text and solid buttons, and a deep terracotta for anything
+   interactive. The amber `--amber` is a glow colour only — it is never used
+   for text, because #e8a75c on cream is 2:1.
    ========================================================================= */
+
+:root {
+  --bg: #efe9e2;
+  --bg-warm: #e8dfd5;
+  --frame: rgba(247, 243, 239, .78);
+  --frame-solid: #f7f3ef;
+  --band: #e6ddd3;
+  --band-2: #ded3c7;
+  --panel: #ffffff;
+  --ink: #17181a;
+  --ink-soft: #45413c;
+  /* #5c5750 measured 4.43:1 on the tan quote panel, just under AA; one step
+     darker on the same hue is 4.80:1 there and changes nothing else */
+  --muted: #575249;
+  --accent: #8a4a22;
+  --accent-deep: #6f3a1a;
+  --amber: #e8a75c;
+  --clay: #a8442a;
+  --palm: #2f6b50;
+  --line: rgba(23, 24, 26, .12);
+  --line-strong: rgba(23, 24, 26, .24);
+  --line-soft: rgba(23, 24, 26, .07);
+  --glass: rgba(255, 255, 255, .62);
+  --glass-2: rgba(255, 255, 255, .82);
+  --shadow: 0 22px 48px -26px rgba(60, 42, 26, .38), 0 3px 10px rgba(60, 42, 26, .07);
+  --shadow-soft: 0 12px 26px -18px rgba(60, 42, 26, .34);
+  --sans: "Plus Jakarta Sans", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: var(--sans);
+  --gutter: clamp(1.1rem, 4vw, 2.6rem);
+  --r: 16px;
+  --r-lg: 26px;
+  --ease: cubic-bezier(.22, .75, .28, 1);
+}
 
 .masthead,
 .backbar,
 .dk-foot,
 .dk-skip {
-  --frame: #101317;
-  --ink: #f1ebdf;
-  --ink-soft: #c9c1b2;
-  --muted: #948c7d;
-  --gold: #d8b26a;
-  --gold-dim: #a8895a;
-  --line: rgba(216, 178, 106, .18);
-  --glass: rgba(255, 255, 255, .045);
-  --serif: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
-  --sans: "Mukta", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --gutter: clamp(1.1rem, 4vw, 2.6rem);
-  --ease: cubic-bezier(.22, .75, .28, 1);
   position: relative;
   box-sizing: border-box;
   color: var(--ink);
@@ -42,78 +69,98 @@
 .masthead :focus-visible,
 .backbar :focus-visible,
 .dk-foot :focus-visible,
-.dk-skip:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+.dk-skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 
 /* ------------------------------------------------------------- skip link */
 .dk-skip {
   position: absolute; left: -9999px; top: 0; z-index: 60;
-  background: var(--gold); color: #14100a; padding: .7rem 1.1rem; border-radius: 0 0 10px 0;
+  background: var(--ink); color: #fff; padding: .7rem 1.1rem; border-radius: 0 0 12px 0;
   font-weight: 600;
 }
 .dk-skip:focus { left: 0; }
 
 /* -------------------------------------------------------------- masthead */
+/* Frosted rather than solid, so the warm page shows through it the way the
+   reference's header sits over its photograph. */
 .masthead {
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; gap: 1rem;
-  padding: .85rem var(--gutter);
+  padding: .8rem var(--gutter);
   background: var(--frame);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
   border-bottom: 1px solid transparent;
   transition: border-color .25s, background .25s;
 }
-.masthead.is-stuck { border-bottom-color: var(--line); background: #0d0f13; }
+.masthead.is-stuck { border-bottom-color: var(--line); background: rgba(247, 243, 239, .94); }
 
-.brand { display: flex; align-items: center; gap: .6rem; color: var(--gold); flex: 0 0 auto; }
+.brand { display: flex; align-items: center; gap: .6rem; color: var(--accent); flex: 0 0 auto; }
 .brand__mark { display: grid; place-items: center; }
 .brand__words { display: grid; line-height: 1; }
-.brand__words b { font-family: var(--serif); font-weight: 500; font-size: 1.16rem; letter-spacing: .16em; color: var(--ink); }
-.brand__words i { font-style: normal; font-size: .58rem; letter-spacing: .34em; text-transform: uppercase; color: var(--muted); margin-top: .28rem; }
+.brand__words b { font-family: var(--display); font-weight: 700; font-size: 1.2rem; letter-spacing: -.02em; color: var(--ink); }
+.brand__words i { font-style: normal; font-size: .58rem; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin-top: .3rem; }
 
 .mastnav { margin-left: auto; }
 .mastnav ul { display: flex; gap: .15rem; margin: 0; padding: 0; list-style: none; }
 .mastnav li { margin: 0; }
 .mastnav a {
-  display: block; padding: .52rem .85rem; border-radius: 999px;
-  font-size: .87rem; color: var(--ink-soft); transition: color .2s, background .2s;
+  display: block; padding: .52rem .9rem; border-radius: 999px;
+  font-size: .89rem; font-weight: 500; color: var(--ink-soft);
+  transition: color .2s, background .2s;
 }
-.mastnav a:hover { color: var(--ink); background: var(--glass); }
-.mastnav a[aria-current="page"] { background: var(--ink); color: #14171c; font-weight: 600; }
+.mastnav a:hover { color: var(--ink); background: rgba(23, 24, 26, .06); }
+.mastnav a[aria-current="page"] {
+  background: var(--panel); color: var(--ink); font-weight: 700;
+  box-shadow: var(--shadow-soft);
+}
 
 .masthead__tail { display: flex; align-items: center; gap: .55rem; }
 .roundrow { display: flex; gap: .35rem; }
 .round {
   display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
-  border: 1px solid var(--line); color: var(--ink-soft);
+  border: 1px solid var(--line); color: var(--ink-soft); background: rgba(255, 255, 255, .4);
   transition: color .2s, border-color .2s, background .2s;
 }
-.round:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--glass); }
+.round:hover { color: var(--accent-deep); border-color: var(--line-strong); background: var(--panel); }
 
 .burger {
   display: none; width: 42px; height: 38px; border: 1px solid var(--line);
-  border-radius: 10px; background: none; padding: 0; cursor: pointer;
+  border-radius: 12px; background: rgba(255, 255, 255, .4); padding: 0; cursor: pointer;
 }
-.burger span { display: block; width: 17px; height: 1.6px; background: var(--ink); margin: 4px auto; transition: transform .25s var(--ease); }
+.burger span { display: block; width: 17px; height: 1.8px; background: var(--ink); margin: 4px auto; transition: transform .25s var(--ease); }
 .nav-open .burger span:first-child { transform: translateY(3px) rotate(45deg); }
 .nav-open .burger span:last-child { transform: translateY(-3px) rotate(-45deg); }
 
 /* ------------------------------------------------------------------ pills */
 .pill {
   display: inline-flex; align-items: center; gap: .6rem;
-  min-height: 44px; padding: .55rem .7rem .55rem 1.15rem;
-  border-radius: 999px; font-size: .92rem; font-weight: 600; letter-spacing: .01em;
+  min-height: 44px; padding: .55rem .7rem .55rem 1.2rem;
+  border-radius: 999px; font-size: .92rem; font-weight: 600; letter-spacing: -.005em;
   border: 1px solid transparent; touch-action: manipulation;
   transition: transform .18s var(--ease), background .2s, border-color .2s, color .2s;
 }
 .pill:hover { transform: translateY(-1px); }
-.pill--solid { background: var(--ink); color: #12151a; }
-.pill--solid:hover { background: #fff; }
+/* a tap gets an answer inside the touch, not only on hover */
+.pill:active { transform: translateY(0) scale(.985); }
+.pill--solid { background: var(--ink); color: #fff; }
+.pill--solid:hover { background: #000; }
 .pill--solid svg {
-  display: grid; place-items: center; background: #12151a; color: var(--ink);
+  display: grid; place-items: center; background: #fff; color: var(--ink);
   border-radius: 50%; padding: 5px; width: 27px; height: 27px;
 }
-.pill--ghost { border-color: var(--gold-dim); color: var(--gold); }
-.pill--ghost:hover { background: rgba(216, 178, 106, .1); border-color: var(--gold); }
+.pill--ghost { border-color: var(--line-strong); color: var(--accent-deep); }
+.pill--ghost:hover { background: rgba(255, 255, 255, .72); border-color: var(--accent); }
 .pillrow { display: flex; flex-wrap: wrap; gap: .7rem; }
+
+/* The header's own call to action. Asked for explicitly: this label is pure
+   black, so the pill inverts to a white chip instead of the near-black used
+   for primary buttons everywhere else. */
+.masthead__tail .pill--solid {
+  background: var(--panel); color: #000;
+  border-color: var(--line); box-shadow: var(--shadow-soft);
+}
+.masthead__tail .pill--solid:hover { background: #fff; border-color: var(--accent); }
+.masthead__tail .pill--solid svg { background: none; color: #000; padding: 0; width: auto; height: auto; }
 
 /* -------------------------------------------------------------- back bar */
 /* Every page except Home gets one. It is a real link to the page above it, so
@@ -126,46 +173,49 @@
   position: sticky; z-index: 39;
   display: flex; align-items: center; gap: .6rem;
   padding: .35rem var(--gutter);
-  background: #0d0f13;
+  background: rgba(247, 243, 239, .9);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid var(--line);
   font-size: .82rem; color: var(--muted);
 }
 .backbar__btn {
   display: inline-flex; align-items: center; gap: .45rem;
-  min-height: 44px; padding: .4rem .85rem .4rem .6rem;
+  min-height: 44px; padding: .4rem .9rem .4rem .65rem;
   border: 1px solid var(--line); border-radius: 999px;
-  color: var(--ink-soft); font-weight: 600; background: none; cursor: pointer;
+  color: var(--ink-soft); font-weight: 600; background: rgba(255, 255, 255, .45); cursor: pointer;
   transition: color .2s, border-color .2s, background .2s;
 }
-.backbar__btn:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--glass); }
+.backbar__btn:hover { color: var(--accent-deep); border-color: var(--accent); background: var(--panel); }
 .backbar__btn svg { transition: transform .2s var(--ease); }
 .backbar__btn:hover svg { transform: translateX(-3px); }
-.backbar__here { display: flex; align-items: center; gap: .4rem; margin-left: auto; letter-spacing: .04em; }
+.backbar__here { display: flex; align-items: center; gap: .4rem; margin-left: auto; letter-spacing: .02em; }
 .backbar__here b { color: var(--ink-soft); font-weight: 600; }
 
 /* ---------------------------------------------------------------- footer */
 .dk-foot {
   display: flex; flex-wrap: wrap; align-items: center; gap: 1.1rem 1.8rem;
-  padding: 1.6rem var(--gutter) 2rem; border-top: 1px solid var(--line);
-  background: #0d1014;
+  padding: 1.8rem var(--gutter) 2.2rem; border-top: 1px solid var(--line);
+  background: var(--band);
 }
-.brand--foot { color: var(--gold); }
+.brand--foot { color: var(--accent); }
 .dk-foot__nav { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-left: auto; font-size: .87rem; }
 .dk-foot__nav a { color: var(--muted); transition: color .2s; }
-.dk-foot__nav a:hover { color: var(--gold); }
+.dk-foot__nav a:hover { color: var(--accent-deep); }
 .dk-foot__status { width: 100%; margin: 0; font-size: .78rem; color: var(--muted); }
-.dk-foot__status.is-local { color: var(--gold); }
+.dk-foot__status.is-local { color: var(--accent-deep); font-weight: 600; }
 
 /* ------------------------------------------------------------ responsive */
 @media (max-width: 899px) {
   .mastnav {
     position: fixed; inset: 62px 0 auto; padding: .6rem var(--gutter) 1.2rem;
-    background: rgba(13, 15, 19, .98); border-bottom: 1px solid var(--line);
+    background: rgba(247, 243, 239, .98); border-bottom: 1px solid var(--line);
     display: none; margin-left: 0; z-index: 39;
   }
   .nav-open .mastnav { display: block; }
   .mastnav ul { flex-direction: column; gap: .1rem; }
-  .mastnav a { padding: .8rem .4rem; border-radius: 8px; font-size: 1rem; min-height: 44px; }
+  .mastnav a { padding: .8rem .6rem; border-radius: 12px; font-size: 1rem; min-height: 44px; }
+  .mastnav a[aria-current="page"] { background: rgba(255, 255, 255, .8); box-shadow: none; }
   .burger { display: block; }
   .masthead__tail .pill--solid { display: none; }
   .backbar__here { display: none; }
@@ -173,18 +223,30 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pill:hover { transform: none; }
+  /* the press still answers, it just does not travel */
+  .pill, .pill:active { transition: none; }
   .backbar__btn:hover svg { transform: none; }
   .masthead { transition: none; }
 }
 
-/* The chrome carries its own colour tokens, so a page's contrast override does
-   not reach it — this raises the header, back bar and footer too. */
-@media (prefers-contrast: more) {
-  .masthead, .backbar, .dk-foot, .dk-skip {
-    --muted: #c4bcad;
-    --line: rgba(216, 178, 106, .5);
+/* Browsers with no backdrop support, and visitors who ask for less
+   transparency, get the same header on an opaque cream plate. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .masthead, .backbar { background: var(--frame-solid); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .masthead, .backbar {
+    background: var(--frame-solid);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
   }
+}
+
+/* A page's own contrast override reaches the chrome now, because the tokens
+   are global — this only hardens the chrome-specific surfaces on top of it. */
+@media (prefers-contrast: more) {
+  :root { --muted: #3f3a35; --line: rgba(23, 24, 26, .3); --line-soft: rgba(23, 24, 26, .18); }
   .mastnav a { color: var(--ink); }
+  .masthead, .backbar { background: var(--frame-solid); }
 }
 
 @media print {

@@ -1,37 +1,69 @@
 /* ============================================================================
    ICHHAPUR Market — admin panel
    ----------------------------------------------------------------------------
-   Same palette as the dark landing page, but laid out for data entry rather
-   than for reading: dense rows, grouped fields, and every hint next to the
-   field it belongs to. Self-contained on purpose — the public pages keep
+   Same warm daylight theme as the rest of the site, laid out for data entry
+   rather than for reading: dense rows, grouped fields, and every hint next to
+   the field it belongs to. Self-contained on purpose — the public pages keep
    their own stylesheet so nothing here can restyle what a visitor sees.
+
+   The shared colour tokens live in site-chrome.css, which this page loads
+   after this file, so anything named there is NOT redeclared here. What is set
+   below belongs to the admin panel alone: the danger/ok pair, and the per-trade
+   colour ramp that the table, the chips and the editor are painted with.
    ========================================================================= */
 
 :root {
-  color-scheme: dark;
-  --bg: #0b0d10;
-  --frame: #101317;
-  --band: #13171c;
-  --panel: #1a2027;
-  --panel-2: #151a20;
-  --ink: #f1ebdf;
-  --ink-soft: #c9c1b2;
-  --muted: #948c7d;
-  --gold: #d8b26a;
-  --gold-dim: #a8895a;
-  --danger: #e0786a;
-  --ok: #7fc39a;
-  --line: rgba(216, 178, 106, .18);
-  --line-soft: rgba(216, 178, 106, .1);
-  --r: 12px;
-  --r-sm: 8px;
-  --shadow: 0 18px 40px rgba(0, 0, 0, .45);
-  --ease: cubic-bezier(.22, .61, .36, 1);
-  --serif: "Playfair Display", "Iowan Old Style", Georgia, serif;
-  --sans: "Mukta", "Nirmala UI", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --gutter: clamp(1rem, 3.4vw, 2.2rem);
+  color-scheme: light;
+  --panel-2: #f7f3ef;
+  --field: #ffffff;
+  --danger: #9c2a14;
+  --danger-line: rgba(156, 42, 20, .42);
+  --danger-soft: rgba(156, 42, 20, .07);
+  --ok: var(--palm);
+  --ok-line: rgba(47, 107, 80, .4);
+  --ok-soft: rgba(47, 107, 80, .1);
+  --warn: var(--accent);
+  --warn-line: rgba(138, 74, 34, .4);
+  --warn-soft: rgba(232, 167, 92, .22);
+  --r-sm: 10px;
   --wrap: 1120px;
+
+  /* The ramp defaults to "general" so any surface that is not inside a .cat-*
+     scope still gets a hue instead of resolving to nothing. */
+  --cat: #8a4a22;
+  --cat-tint: rgba(138, 74, 34, .085);
+  --cat-line: rgba(138, 74, 34, .34);
 }
+
+/* --------------------------------------------------------------- trade ramp
+   Five hues, one per trade, picked by maths rather than by eye.
+
+   Contrast (WCAG relative luminance): every hue clears AA as label text both on
+   white — medicines 6.3:1, mobile 10.6:1, general 6.8:1, market 5.2:1,
+   service 8.5:1 — and on the 8.5% tint it actually sits in (worst case 4.67:1,
+   market). The tint is kept thin for exactly that reason.
+
+   Separability: simulated as protanopia, deuteranopia and tritanopia and
+   measured as CIE76 distance, the closest two hues in any simulation are still
+   11.7 apart, so no pair merges into one. general and market are the two warm
+   browns and are held apart by lightness, not only by hue.
+
+   Three of them are the theme's own colours — --palm for medicines, --accent for
+   general, and market as the dark end of --amber. mobile and service are the two
+   hues the daylight palette does not have, so they are matched to it: same low
+   chroma, same dark lightness, one plum and one slate.
+
+   None of this is load-bearing on its own: the chip prints the trade name, the
+   status tag is a different shape, and the meter states its percentage in words.
+   ========================================================================= */
+.cat-medicines { --cat: #2f6b50; --cat-tint: rgba(47, 107, 80, .085);  --cat-line: rgba(47, 107, 80, .34); }
+.cat-mobile    { --cat: #5f2f48; --cat-tint: rgba(95, 47, 72, .085);   --cat-line: rgba(95, 47, 72, .34); }
+.cat-general   { --cat: #8a4a22; --cat-tint: rgba(138, 74, 34, .085);  --cat-line: rgba(138, 74, 34, .34); }
+.cat-market    { --cat: #856908; --cat-tint: rgba(133, 105, 8, .085);  --cat-line: rgba(133, 105, 8, .34); }
+.cat-service   { --cat: #27506e; --cat-tint: rgba(39, 80, 110, .085);  --cat-line: rgba(39, 80, 110, .34); }
+/* "All trades" is not a trade, so the filter control goes grey rather than
+   borrowing one of the five hues. */
+.cat-none      { --cat: var(--muted); --cat-tint: transparent;         --cat-line: var(--line-strong); }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -40,19 +72,22 @@ html { -webkit-text-size-adjust: 100%; }
 body.dk.adm {
   margin: 0;
   padding-bottom: 4rem;
-  background: var(--bg);
+  background:
+    radial-gradient(90% 60% at 8% -8%, rgba(232, 167, 92, .3), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1.6;
 }
 
-h1, h2, h3 { font-family: var(--serif); font-weight: 500; line-height: 1.2; margin: 0; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.025em; line-height: 1.15; margin: 0; }
 p { margin: 0 0 .7rem; }
 ul, ol, dl, dd { margin: 0; padding: 0; }
-code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; color: var(--gold); }
-a { color: var(--gold); }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; color: var(--accent-deep); }
+a { color: var(--accent-deep); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -62,13 +97,13 @@ a { color: var(--gold); }
 .skip {
   /* above the shared masthead (z-index 40) so it is not hidden when focused */
   position: absolute; left: .6rem; top: -3rem; z-index: 60;
-  background: var(--gold); color: #14181d; padding: .5rem .9rem;
+  background: var(--ink); color: #fff; padding: .5rem .9rem;
   border-radius: 0 0 var(--r-sm) var(--r-sm); font-weight: 600; text-decoration: none;
   transition: top .18s var(--ease);
 }
 .skip:focus { top: 0; }
 
-:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ------------------------------------------------------------- page frame */
 /* The header is the shared masthead from site-chrome.css / site-nav.js, so this
@@ -79,10 +114,11 @@ main { width: min(100%, var(--wrap)); margin: 0 auto; padding: 0 var(--gutter); 
 .notice {
   margin: 1.4rem 0 0;
   padding: 1.1rem 1.2rem 1.15rem;
-  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--gold);
+  border-left: 3px solid var(--accent);
   border-radius: var(--r);
+  box-shadow: var(--shadow-soft);
 }
 .notice h1 { font-size: clamp(1.25rem, 3.2vw, 1.7rem); margin-bottom: .5rem; }
 .notice p { font-size: .92rem; color: var(--ink-soft); max-width: 78ch; }
@@ -105,41 +141,50 @@ main { width: min(100%, var(--wrap)); margin: 0 auto; padding: 0 var(--gutter); 
 .field--wide { flex: 1 1 100%; }
 .field__label {
   font-size: .74rem; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--gold); font-weight: 600;
+  color: var(--accent); font-weight: 700;
 }
 .req { color: var(--danger); }
 
 input[type="text"], input[type="search"], input[type="tel"], input[type="url"],
 input[type="date"], select, textarea {
   font: inherit; font-weight: 400; color: var(--ink);
-  background: #0e1114; border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+  background: var(--field); border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: .58rem .7rem; min-height: 44px; width: 100%;
-  transition: border-color .18s, background .18s;
+  transition: border-color .18s, box-shadow .18s;
 }
 textarea { line-height: 1.55; resize: vertical; }
-input:focus, select:focus, textarea:focus { border-color: var(--gold-dim); background: #101418; }
-input::placeholder, textarea::placeholder { color: #6d675c; }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent); outline: none;
+  box-shadow: 0 0 0 3px rgba(138, 74, 34, .18);
+}
+input::placeholder, textarea::placeholder { color: var(--muted); }
 select {
   appearance: none; padding-right: 2rem; cursor: pointer;
-  background-image: linear-gradient(45deg, transparent 50%, var(--gold-dim) 50%),
-                    linear-gradient(135deg, var(--gold-dim) 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent-deep) 50%),
+                    linear-gradient(135deg, var(--accent-deep) 50%, transparent 50%);
   background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
 }
 input[type="file"] {
   font: inherit; color: var(--ink-soft); min-height: 44px;
-  background: #0e1114; border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+  background: var(--field); border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: .45rem .6rem;
 }
 input[type="file"]::file-selector-button {
   font: inherit; font-weight: 600; cursor: pointer;
-  color: #14181d; background: var(--gold); border: 0; border-radius: 6px;
+  color: #fff; background: var(--ink); border: 0; border-radius: 6px;
   padding: .35rem .7rem; margin-right: .7rem;
 }
 .hint { font-size: .8rem; color: var(--muted); line-height: 1.45; margin: 0; }
 .hint--top { margin-bottom: .7rem; max-width: 78ch; }
 .field.is-bad input, .field.is-bad select, .field.is-bad textarea { border-color: var(--danger); }
+/* Two selects carry meaning, so they are allowed to carry colour: the trade one
+   wears the hue of the trade it holds — and the editor's whole card follows the
+   same value, so the control and the table above it agree. */
+.field--cat select { border-color: var(--cat-line); color: var(--cat); }
+.field--stat.is-warn select { border-color: var(--warn-line); color: var(--warn); }
+.field--stat.is-ok select { border-color: var(--ok-line); color: var(--ok); }
 
 /* buttons ---------------------------------------------------- */
 .btn {
@@ -147,19 +192,21 @@ input[type="file"]::file-selector-button {
   color: var(--ink); background: var(--panel);
   border: 1px solid var(--line); border-radius: 999px;
   padding: .55rem 1.05rem; min-height: 44px;
+  box-shadow: var(--shadow-soft);
   transition: transform .16s var(--ease), border-color .18s, background .18s, color .18s;
 }
-.btn:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
+.btn:hover { border-color: var(--accent-deep); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
-.btn--primary { background: var(--ink); color: #14181d; border-color: var(--ink); }
-.btn--primary:hover { background: #fff6e6; }
-.btn--danger { color: var(--danger); border-color: rgba(224, 120, 106, .4); background: rgba(224, 120, 106, .07); }
-.btn--danger:hover { border-color: var(--danger); background: rgba(224, 120, 106, .14); }
-.btn--danger[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+.btn--primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn--primary:hover { background: #000; border-color: #000; color: #fff; }
+.btn--danger { color: var(--danger); border-color: var(--danger-line); background: var(--danger-soft); box-shadow: none; }
+.btn--danger:hover { border-color: var(--danger); background: rgba(156, 42, 20, .13); }
+.btn--danger[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
 .btn--small { min-height: 38px; padding: .4rem .85rem; font-size: .86rem; }
 .linkish {
-  font: inherit; color: var(--gold); background: none; border: 0; padding: 0;
+  font: inherit; color: var(--accent-deep); background: none; border: 0; padding: 0;
   cursor: pointer; text-decoration: underline;
+  transition: color .18s var(--ease), transform .16s var(--ease);
 }
 .acts-inline { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin: .5rem 0 0; }
 .parse { font-size: .84rem; color: var(--muted); }
@@ -170,25 +217,32 @@ input[type="file"]::file-selector-button {
 /* `position: relative` keeps the visually-hidden caption and column label inside
    this scroll box — otherwise their absolute positioning escapes to the page and
    the wide table leaks a horizontal scrollbar onto small screens. */
-.listwrap { position: relative; overflow-x: auto; border: 1px solid var(--line-soft); border-radius: var(--r); background: var(--band); }
+.listwrap { position: relative; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); box-shadow: var(--shadow-soft); }
 table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 44rem; }
 .list thead th {
   text-align: left; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--gold); font-weight: 600; padding: .7rem .8rem;
+  color: var(--accent); font-weight: 700; padding: .7rem .8rem;
+  background: var(--panel-2);
   border-bottom: 1px solid var(--line); white-space: nowrap;
 }
 .list tbody td,
-.list tbody th { padding: .65rem .8rem; border-bottom: 1px solid rgba(255, 255, 255, .045); vertical-align: middle; }
+.list tbody th { padding: .65rem .8rem; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 /* the store name is a row header, so the other cells in the row are announced
    against it — it still has to look like the rest of the row, not a heading */
 .list tbody th { text-align: left; font-weight: 400; }
 .list tbody tr:last-child td,
 .list tbody tr:last-child th { border-bottom: 0; }
-.list tbody tr:hover { background: rgba(216, 178, 106, .05); }
+/* hover takes the row's own trade hue rather than a generic tint, so resting
+   the pointer on a row still tells you which trade it belongs to */
+.list tbody tr:hover { background: var(--cat-tint); }
+/* one hue down the left edge groups the table by trade at a glance — you never
+   have to read the label to see where the medicines shops end and the phone
+   shops start */
+.list tbody td:first-child { box-shadow: inset 3px 0 0 var(--cat); }
 .c-img { width: 4.6rem; }
 .rowimg {
   display: block; width: 4.2rem; height: 2.4rem; object-fit: cover;
-  border-radius: 6px; border: 1px solid var(--line-soft); background: #0f1216;
+  border-radius: 6px; border: 1px solid var(--line); background: var(--cat-tint);
 }
 .rowname { font-weight: 600; color: var(--ink); }
 .rowid { display: block; font-size: .74rem; color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
@@ -196,17 +250,30 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
   display: inline-block; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
   font-weight: 700; padding: .22rem .5rem; border-radius: 5px; border: 1px solid;
 }
-.tag--ok { color: var(--ok); border-color: rgba(127, 195, 154, .45); background: rgba(127, 195, 154, .08); }
-.tag--warn { color: var(--gold); border-color: rgba(216, 178, 106, .45); background: rgba(216, 178, 106, .08); }
+.tag--ok { color: var(--ok); border-color: var(--ok-line); background: var(--ok-soft); }
+.tag--warn { color: var(--warn); border-color: var(--warn-line); background: var(--warn-soft); }
+/* The trade chip is deliberately a different shape from the status tag — pill,
+   sentence case, its own dot — so the two colour-coded things in the same row
+   cannot be mistaken for each other. */
+.tag--cat {
+  display: inline-flex; align-items: center; gap: .42rem;
+  font-size: .75rem; letter-spacing: .01em; text-transform: none; font-weight: 600;
+  border-radius: 999px; padding: .2rem .6rem .2rem .48rem;
+  color: var(--cat); border-color: var(--cat-line); background: var(--cat-tint);
+}
+.tag--cat::before {
+  content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%;
+  background: var(--cat);
+}
 .dim { color: var(--muted); }
 .rowacts { display: flex; gap: .4rem; white-space: nowrap; }
 .iconbtn {
   font: inherit; cursor: pointer; color: var(--ink-soft);
-  background: transparent; border: 1px solid var(--line-soft); border-radius: 7px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
   padding: .3rem .6rem; min-height: 38px;
-  transition: color .18s, border-color .18s;
+  transition: transform .16s var(--ease), color .18s, border-color .18s, background .18s;
 }
-.iconbtn:hover { color: var(--gold); border-color: var(--gold-dim); }
+.iconbtn:hover { color: var(--accent-deep); border-color: var(--accent); }
 .iconbtn--danger:hover { color: var(--danger); border-color: var(--danger); }
 .empty { padding: 1.4rem; color: var(--muted); text-align: center; }
 
@@ -214,8 +281,11 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
 .editor, .export {
   margin: 1.6rem 0;
   border: 1px solid var(--line); border-radius: var(--r);
-  background: var(--band); box-shadow: var(--shadow);
+  background: var(--panel); box-shadow: var(--shadow);
 }
+/* The card opens wearing the trade it is editing, so the whole editor takes on
+   the identity of the listing instead of being one more white box. */
+.editor { border-top-color: var(--cat); border-top-width: 3px; }
 .editor__head, .export__head { padding: 1.1rem 1.2rem .3rem; }
 .editor__head h2, .export__head h2 { font-size: clamp(1.3rem, 3vw, 1.8rem); }
 .editor__sub { font-size: .86rem; color: var(--muted); margin-top: .3rem; }
@@ -225,7 +295,7 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
 .grp:first-of-type { border-top: 0; padding-top: .3rem; }
 .grp > legend {
   font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--gold); font-weight: 700; padding: 0 .6rem 0 0;
+  color: var(--accent); font-weight: 700; padding: 0 .6rem 0 0;
 }
 .grid2 { display: grid; gap: 1rem 1.2rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
 .grp > .field, .grp > .grid2 { margin-bottom: 1rem; }
@@ -234,15 +304,15 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
 /* photo --------------------------------------------------------- */
 .photo { display: grid; gap: 1.1rem; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); align-items: start; }
 .photo__prev {
-  position: relative; border: 1px dashed var(--line); border-radius: var(--r-sm);
-  background: #0f1216; overflow: hidden; aspect-ratio: 16 / 9;
+  position: relative; border: 1px dashed var(--cat-line); border-radius: var(--r-sm);
+  background: var(--cat-tint); overflow: hidden; aspect-ratio: 16 / 9;
 }
 .photo__prev img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .photo__prev img[hidden] { display: none; }
 .photo__tag {
   position: absolute; left: .5rem; bottom: .5rem;
-  font-size: .68rem; letter-spacing: .06em; color: var(--ink-soft);
-  background: rgba(11, 13, 16, .8); border: 1px solid var(--line-soft);
+  font-size: .68rem; letter-spacing: .06em; color: #f4efe9;
+  background: rgba(23, 24, 26, .78); border: 1px solid rgba(255, 255, 255, .22);
   padding: .18rem .45rem; border-radius: 5px;
 }
 .photo__ctl { display: grid; gap: .9rem; }
@@ -252,7 +322,7 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
 .src {
   display: grid; gap: .6rem .8rem; align-items: end;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.5fr) minmax(0, 9.5rem) auto;
-  padding: .8rem; border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+  padding: .8rem; border: 1px solid var(--line); border-radius: var(--r-sm);
   background: var(--panel-2);
 }
 .src__del { align-self: end; }
@@ -261,12 +331,12 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
 .saved { font-size: .86rem; color: var(--ok); min-height: 1.4em; margin: .6rem 0 0; }
 .err {
   font-size: .9rem; color: var(--danger);
-  border: 1px solid rgba(224, 120, 106, .4); background: rgba(224, 120, 106, .08);
+  border: 1px solid var(--danger-line); background: var(--danger-soft);
   border-radius: var(--r-sm); padding: .6rem .8rem; margin: 0 0 .9rem;
 }
 .err ul { padding-left: 1.2rem; margin: .35rem 0 0; }
 .err li { margin-bottom: .2rem; }
-.grp.is-bad { border-top-color: rgba(224, 120, 106, .5); }
+.grp.is-bad { border-top-color: var(--danger-line); }
 .grp.is-bad > legend { color: var(--danger); }
 
 /* ---------------------------------------------------------------- export */
@@ -276,28 +346,72 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
 .export pre {
   margin: .9rem 1.2rem 0; max-height: 26rem; overflow: auto;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .76rem; line-height: 1.5;
-  color: var(--ink-soft); background: #0e1114; border: 1px solid var(--line-soft);
+  color: var(--ink-soft); background: var(--panel-2); border: 1px solid var(--line);
   border-radius: var(--r-sm); padding: .9rem; white-space: pre-wrap; word-break: break-word;
 }
 
 /* ------------------------------------------------------------------ misc */
 .adm-foot {
   width: min(100%, var(--wrap)); margin: 2rem auto 0; padding: 1rem var(--gutter) 0;
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid var(--line);
   display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; font-size: .82rem; color: var(--muted);
 }
 .meter { margin: 0; }
 .meter.is-near { color: var(--danger); }
+/* past 95% the draft is about to be rejected by the browser, so it stops being
+   a line of grey text and becomes the loudest thing at the bottom of the page.
+   The percentage is printed in words too — the colour is not the message. */
+.meter.is-over {
+  color: #fff; background: var(--danger);
+  border-radius: var(--r-sm); padding: .5rem .75rem; font-weight: 600;
+}
 .savedat { margin: 0 0 0 auto; }
 
+/* A toast is the one place the reference uses solid black over the page, so it
+   reads as an overlay rather than another white card. */
 .toast {
   position: fixed; left: 50%; bottom: 1.2rem; transform: translate(-50%, 0);
   z-index: 30; max-width: min(92vw, 34rem);
-  background: rgba(20, 24, 29, .97); color: var(--ink);
-  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--ink); color: #fff;
+  border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px;
   padding: .6rem 1.1rem; font-size: .88rem; box-shadow: var(--shadow);
 }
-.toast.is-bad { border-color: var(--danger); color: var(--danger); }
+.toast.is-bad { background: var(--danger); color: #fff; border-color: rgba(255, 255, 255, .28); }
+
+/* ------------------------------------------------------------------ motion
+   This panel is a tool, so movement only ever says "this appeared" or "this
+   took your press": 160–300 ms, transform and opacity, nothing that moves a
+   layout box around. The reduced-motion block below flattens all of it. */
+@keyframes panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes row-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes editor-in { from { opacity: 0; transform: translateY(10px) scale(.994); } to { opacity: 1; transform: none; } }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.notice, .toolbar, .listwrap, .export { animation: panel-in .3s var(--ease) both; }
+.toolbar { animation-delay: .05s; }
+.listwrap { animation-delay: .1s; }
+.export { animation-delay: .15s; }
+
+/* The rows arrive once with the list. renderList() rebuilds the table on every
+   keystroke in the filter, so the stagger is gated on .is-fresh, which the first
+   draw sets and drops again before anyone can type. */
+#admRows.is-fresh tr { animation: row-in .22s var(--ease) both; }
+#admRows.is-fresh tr:nth-child(2) { animation-delay: 26ms; }
+#admRows.is-fresh tr:nth-child(3) { animation-delay: 52ms; }
+#admRows.is-fresh tr:nth-child(4) { animation-delay: 78ms; }
+#admRows.is-fresh tr:nth-child(5) { animation-delay: 104ms; }
+#admRows.is-fresh tr:nth-child(6) { animation-delay: 130ms; }
+#admRows.is-fresh tr:nth-child(7) { animation-delay: 156ms; }
+#admRows.is-fresh tr:nth-child(8) { animation-delay: 182ms; }
+#admRows.is-fresh tr:nth-child(n+9) { animation-delay: 208ms; }
+
+/* Both of these are [hidden] until they are needed, and going from display:none
+   to displayed restarts the animation — so no JavaScript is involved. */
+.editor:not([hidden]) { animation: editor-in .24s var(--ease) both; }
+.toast:not([hidden]) { animation: toast-in .22s var(--ease) both; }
+
+.iconbtn:active, .linkish:active { transform: scale(.96); }
+.list tbody tr { transition: background-color .18s var(--ease); }
 
 @media (max-width: 700px) {
   .photo { grid-template-columns: 1fr; }
@@ -313,7 +427,26 @@ table.list { width: 100%; border-collapse: collapse; font-size: .9rem; min-width
   .btn:hover { transform: none; }
 }
 
+@media (prefers-contrast: more) {
+  :root { --danger-soft: rgba(156, 42, 20, .12); }
+  .btn { box-shadow: none; }
+  input[type="text"], input[type="search"], input[type="tel"], input[type="url"],
+  input[type="date"], select, textarea, input[type="file"] { border-color: var(--line-strong); }
+  /* the washes are the weak part of a hue-coded table — drop them and let the
+     full-strength hue carry the edge instead */
+  .list tbody tr:hover { background: var(--panel-2); }
+  .list tbody td:first-child { box-shadow: inset 4px 0 0 var(--cat); }
+  .tag--cat, .tag--ok, .tag--warn { background: none; border-color: currentColor; }
+}
+
 @media print {
   body.dk.adm { background: #fff; color: #111; }
   .toolbar, .editor__foot, .toast, .rowacts { display: none !important; }
+  .editor, .export, .notice, .listwrap { box-shadow: none; }
+  /* most printers drop tints, so the trade has to survive as a black-bordered
+     label rather than as colour */
+  .list tbody td:first-child { box-shadow: none; }
+  .tag--cat { background: none; border-color: var(--ink); color: var(--ink); }
+  .editor { border-top-width: 1px; }
+  .meter.is-over { color: var(--danger); background: none; border: 1px solid var(--danger); }
 }

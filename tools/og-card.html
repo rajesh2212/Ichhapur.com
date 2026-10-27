@@ -1,0 +1,93 @@
+<!doctype html>
+<!--
+  Source artwork for assets/img/og.png (the social preview card).
+  This is a design file, not a page: nothing links to it. tools/make-images.mjs
+  renders it at 1200x630 through headless Chrome and writes the PNG out.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ICHHAPUR Market — preview card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>
+  :root {
+    --bg: #efe9e2; --panel: #ffffff; --ink: #17181a; --ink-soft: #45413c;
+    --muted: #5c5750; --accent: #8a4a22; --amber: #e8a75c; --palm: #2f6b50;
+    --line: rgba(23, 24, 26, .12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+
+  .card {
+    position: relative; width: 1200px; height: 630px; padding: 56px 60px;
+    display: grid; grid-template-rows: auto 1fr auto;
+    background:
+      radial-gradient(80% 70% at 96% -12%, rgba(232, 167, 92, .42), transparent 62%),
+      var(--bg);
+    color: var(--ink);
+  }
+  /* the street art sits behind the words, never beside them */
+  .card > *:not(.street) { position: relative; z-index: 1; }
+  .mid, .foot { max-width: 760px; }
+
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .mark {
+    width: 52px; height: 52px; border-radius: 15px; background: var(--panel);
+    border: 1px solid var(--line); display: grid; place-items: center;
+    box-shadow: 0 10px 22px -16px rgba(60, 42, 26, .5);
+  }
+  .mark svg { width: 30px; height: 30px; color: var(--accent); }
+  .word { font-size: 25px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+  .sub { font-size: 12px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-top: 5px; }
+
+  h1 { font-size: 58px; font-weight: 800; letter-spacing: -.035em; line-height: 1.05; max-width: 17ch; }
+  .lede { margin-top: 16px; font-size: 22px; font-weight: 400; line-height: 1.45; color: var(--ink-soft); max-width: 44ch; }
+  .chips { display: flex; gap: 10px; margin-top: 26px; }
+
+  .foot { display: flex; align-items: flex-end; gap: 30px; }
+  .place { font-size: 21px; font-weight: 600; color: var(--ink); }
+  .place span { display: block; font-size: 15px; font-weight: 400; color: var(--muted); margin-top: 4px; letter-spacing: .01em; }
+  .chip {
+    font-size: 14px; font-weight: 700; padding: 9px 15px; border-radius: 999px;
+    border: 1px solid; white-space: nowrap;
+  }
+  .chip--live { color: var(--palm); border-color: rgba(47, 107, 80, .4); background: rgba(47, 107, 80, .1); }
+  .chip--check { color: var(--accent); border-color: rgba(138, 74, 34, .4); background: rgba(232, 167, 92, .22); }
+
+  /* the market street drawn at the bottom right, cropped by the card */
+  .street { position: absolute; right: -26px; bottom: -14px; width: 430px; z-index: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5.5h5V20"/>
+        </svg>
+      </div>
+      <div>
+        <div class="word">ICHHAPUR</div>
+        <div class="sub">Market guide</div>
+      </div>
+    </div>
+
+    <div class="mid">
+      <h1>Every shop in the market, and how well we know it.</h1>
+      <p class="lede">Stores, services and shopping lanes of Ichhapur — each listing labelled with what is confirmed and what still needs checking at the shopfront.</p>
+      <div class="chips">
+        <span class="chip chip--live">Publicly listed</span>
+        <span class="chip chip--check">Listing needs confirmation</span>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="place">Ichhapur, Bhadrak<span>Bhadrak district, Odisha 756127</span></div>
+    </div>
+
+    <img class="street" src="../assets/img/market-street.svg" alt="">
+  </div>
+</body>
+</html>

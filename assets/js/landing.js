@@ -63,18 +63,6 @@
 
   var U = window.MD && window.MD.util;
 
-  /* This page is dark, so the trade drawings must be the dark set. The guide
-     keeps the light ones; the data layer holds both paths. */
-  if (U) {
-    U.useTradeArt({
-      medicines: "assets/img/dark/medicines.svg",
-      mobile: "assets/img/dark/mobile.svg",
-      general: "assets/img/dark/general.svg",
-      market: "assets/img/dark/market.svg",
-      service: "assets/img/dark/service.svg"
-    });
-  }
-
   /* ------------------------------------------------------------- state */
   var DATA = null;
   var STORES = [];

@@ -6,11 +6,14 @@
 <title>Store admin — ICHHAPUR Market</title>
 <meta name="description" content="Local editing panel for the ICHHAPUR market listings: add, change or remove a shop, attach a photograph, and export the result back into the site's data file.">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0b0d10">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d10'/%3E%3Cpath d='M6 15 16 7l10 8v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1z' fill='none' stroke='%23d8b26a' stroke-width='2'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#efe9e2">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/img/icon-180.png">
+<link rel="canonical" href="admin.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Mukta:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="assets/css/admin.css">
 <link rel="stylesheet" href="assets/css/site-chrome.css">
 </head>
@@ -49,7 +52,7 @@
         <label class="field__label" for="admSearch">Find a listing</label>
         <input id="admSearch" type="search" autocomplete="off" placeholder="Name, locality or trade…">
       </div>
-      <div class="field">
+      <div class="field field--cat" id="admCatField">
         <label class="field__label" for="admCat">Trade</label>
         <select id="admCat"><option value="">All trades</option></select>
       </div>
@@ -117,13 +120,13 @@
             <p class="hint" id="hId">Used in links like <code>index.html#open=&lt;id&gt;</code>. Changing it breaks links already shared.</p>
           </div>
 
-          <div class="field">
+          <div class="field field--cat">
             <label class="field__label" for="fCat">Trade</label>
             <select id="fCat" name="category" aria-describedby="hCat"></select>
             <p class="hint" id="hCat">Decides which drawing stands in when there is no photograph.</p>
           </div>
 
-          <div class="field">
+          <div class="field field--stat">
             <label class="field__label" for="fStatus">Status</label>
             <select id="fStatus" name="status" aria-describedby="hStatus">
               <option value="needs-confirmation">Listing needs confirmation</option>

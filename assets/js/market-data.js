@@ -173,15 +173,7 @@
 
   function artFor(category) { return TRADE_ART[category] || null; }
 
-  /* A page with a different palette swaps the drawing set here. A photograph
-     supplied for a listing still wins over any of these. */
-  function useTradeArt(map) {
-    if (!map) return;
-    Object.keys(map).forEach(function (k) {
-      if (TRADE_ART[k] && map[k]) TRADE_ART[k] = map[k];
-    });
-  }
-
+  /* A photograph supplied for a listing wins over the stand-in drawing. */
   function thumb(store, cls, lazy) {
     var src = store.photo || artFor(store.category);
     if (!src) return null;
@@ -260,7 +252,6 @@
       catLabel: catLabel,
       TRADE_ART: TRADE_ART,
       artFor: artFor,
-      useTradeArt: useTradeArt,
       thumb: thumb,
       slug: slug,
       parseMaps: parseMaps,

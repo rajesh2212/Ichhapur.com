@@ -1,42 +1,15 @@
 /* ============================================================================
-   ICHHAPUR Market — landing page, dark gold theme
+   ICHHAPUR Market — the six dark pages, now on the warm daylight theme
    ----------------------------------------------------------------------------
-   Self-contained: this page does not load styles.css, so the guide keeps its
-   own light identity untouched. Colours and type are re-declared here.
+   The colour and type tokens live in site-chrome.css, which every page loads,
+   so this file only says what each component looks like.
 
    Content rule that shapes this file: every number, label and quotation on the
    page is computed from data/stores.js. Nothing here is a stock statistic, a
    star rating or a customer review, because none of those exist for this market.
    ========================================================================= */
 
-/* --------------------------------------------------------------- 1. tokens */
-:root {
-  --bg: #0b0d10;
-  --frame: #101317;
-  --band: #13171c;
-  --band-2: #171c22;
-  --panel: #1a2027;
-  --ink: #f1ebdf;
-  --ink-soft: #c9c1b2;
-  --muted: #948c7d;
-  --gold: #d8b26a;
-  --gold-dim: #a8895a;
-  --clay: #b8552f;
-  --palm: #3f8b66;
-  --line: rgba(216, 178, 106, .18);
-  --line-soft: rgba(241, 235, 223, .08);
-  --glass: rgba(255, 255, 255, .045);
-  --glass-2: rgba(255, 255, 255, .07);
-  --shadow: 0 24px 60px -28px rgba(0, 0, 0, .85), 0 4px 14px rgba(0, 0, 0, .35);
-  --serif: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
-  --sans: "Mukta", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --gutter: clamp(1.1rem, 4vw, 2.6rem);
-  --r: 14px;
-  --r-lg: 22px;
-  --ease: cubic-bezier(.22, .75, .28, 1);
-}
-
-/* ---------------------------------------------------------------- 2. reset */
+/* --------------------------------------------------------------- 1. base */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body {
@@ -45,29 +18,27 @@ body {
   line-height: 1.65; overflow-wrap: break-word;
 }
 img, svg { display: block; max-width: 100%; }
-h1, h2, h3 { font-family: var(--serif); font-weight: 500; line-height: 1.12; margin: 0 0 .5em; letter-spacing: -.01em; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; line-height: 1.08; margin: 0 0 .5em; letter-spacing: -.03em; }
 h1 { font-size: clamp(2.5rem, 6.2vw, 4.4rem); }
 h2 { font-size: clamp(1.85rem, 3.5vw, 2.75rem); }
-h3 { font-size: 1.16rem; font-family: var(--sans); font-weight: 600; line-height: 1.3; }
+h3 { font-size: 1.1rem; font-family: var(--sans); font-weight: 700; line-height: 1.3; letter-spacing: -.015em; }
 p { margin: 0 0 1rem; }
 a { color: inherit; text-decoration: none; }
 ul, ol, dl, dd { margin: 0; padding: 0; list-style: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 
 /* ------------------------------------------------------- 3. page container */
-/* The page used to float as a rounded card on top of a blurred copy of itself.
-   It now runs edge to edge, so this is just the background colour.
-   The masthead, back bar and footer are shared with every other page and live
-   in site-chrome.css. */
-.dk-frame { position: relative; background: var(--frame); overflow-x: clip; }
+.dk-frame { position: relative; background: var(--bg); overflow-x: clip; }
 
 /* -------------------------------------------------------------- 6. hero */
-/* The photograph is a backdrop, so it gets its own layer and its own opacity:
-   `.hero__media` holds the image and nothing else, which keeps the text, the
-   stat cards and the buttons at full strength above it. The colour on `.hero`
-   is what shows if the image fails to load. */
-.hero { position: relative; isolation: isolate; overflow: hidden; background-color: #0b0d10; }
+/* The hero is the one dark surface left on these pages, and deliberately so:
+   the night-market picture is the backdrop, so the type over it stays light
+   while the rest of the site goes warm and bright. `.hero__media` holds the
+   image and nothing else, which keeps the text, the stat cards and the buttons
+   at full strength above it. The colour on `.hero` is what shows if the image
+   fails to load. */
+.hero { position: relative; isolation: isolate; overflow: hidden; background-color: #1b1a18; }
 .hero__media { position: absolute; inset: 0; z-index: -2; }
 .hero__media img {
   width: 100%; height: 100%; object-fit: cover; object-position: 62% 62%;
@@ -78,95 +49,105 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .hero::after {
   content: ""; position: absolute; inset: 0; z-index: -1;
   background:
-    linear-gradient(90deg, rgba(11, 13, 16, .93) 0 20%, rgba(11, 13, 16, .6) 44%, rgba(11, 13, 16, .16) 72%, rgba(11, 13, 16, .34) 100%),
-    linear-gradient(0deg, rgba(11, 13, 16, .84) 0 9%, rgba(11, 13, 16, .22) 44%, rgba(11, 13, 16, .4) 100%);
+    linear-gradient(90deg, rgba(27, 26, 24, .94) 0 20%, rgba(27, 26, 24, .62) 44%, rgba(27, 26, 24, .16) 72%, rgba(27, 26, 24, .36) 100%),
+    linear-gradient(0deg, rgba(27, 26, 24, .86) 0 9%, rgba(27, 26, 24, .22) 44%, rgba(27, 26, 24, .42) 100%);
 }
 .hero__ghost {
   position: absolute; top: clamp(.4rem, 3vw, 2.2rem); left: 50%; transform: translateX(-50%);
   z-index: -1; margin: 0; white-space: nowrap; pointer-events: none;
-  font-family: var(--serif); font-weight: 500;
-  font-size: clamp(4.4rem, 17vw, 12.5rem); letter-spacing: .1em; line-height: .8;
-  color: rgba(241, 235, 223, .1);
-  text-shadow: 0 0 60px rgba(216, 178, 106, .12);
+  font-family: var(--display); font-weight: 800;
+  font-size: clamp(4.4rem, 17vw, 12.5rem); letter-spacing: .04em; line-height: .8;
+  color: rgba(248, 244, 239, .11);
+  text-shadow: 0 0 60px rgba(232, 167, 92, .16);
 }
 .hero__inner {
   display: grid; gap: 2rem; align-items: end;
   min-height: clamp(520px, 74vh, 720px);
   padding: clamp(3rem, 9vw, 6rem) var(--gutter) clamp(4.2rem, 8vw, 5.6rem);
 }
-.hero__copy { max-width: 34rem; }
+.hero__copy { max-width: 34rem; color: #f8f4ef; }
 .hero__copy h1 { margin-bottom: .35em; }
-.hero__lede { color: var(--ink-soft); font-size: 1.04rem; max-width: 33ch; margin-bottom: 1.6rem; }
+.hero__lede { color: #ddd4c9; font-size: 1.04rem; font-weight: 400; max-width: 33ch; margin-bottom: 1.6rem; }
+.hero .eyebrow { color: var(--amber); }
+.hero .pill--solid { background: #fff; color: #000; }
+.hero .pill--solid:hover { background: #f2ece4; }
+.hero .pill--solid svg { background: #000; color: #fff; }
+.hero .pill--ghost { border-color: rgba(255, 255, 255, .5); color: #fff; }
+.hero .pill--ghost:hover { background: rgba(255, 255, 255, .14); border-color: #fff; }
 
 .eyebrow {
-  font-size: .7rem; letter-spacing: .26em; text-transform: uppercase;
-  color: var(--gold); font-weight: 600; margin: 0 0 .9rem;
+  font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--accent); font-weight: 700; margin: 0 0 .9rem;
 }
-.eyebrow--light { color: var(--gold); }
+/* the sub-page hero band is a warm amber wash: --accent sits at 4.36:1 on it,
+   --accent-deep at 5.85:1. The landing hero overrides this with amber. */
+.eyebrow--light { color: var(--accent-deep); }
 
 .statcards { display: grid; gap: .7rem; margin-left: auto; width: min(100%, 19rem); }
-/* iOS-style frosted glass: a 40% fill sitting on a blurred, saturated copy of
-   whatever the hero shows behind it, lit from the top edge. The blur is on the
-   card's own backdrop only — no text, image or button inherits an opacity. */
+/* iOS-style frosted glass, inverted for the light theme: a 72% white fill on a
+   blurred copy of the picture behind it, near-black text, lit along the top
+   edge. The blur is on the card's own backdrop only — no text, image or button
+   inherits an opacity. */
 .statcard {
   position: relative; padding: .95rem 1.1rem 1rem;
-  background: rgba(22, 28, 36, .4);
+  background: rgba(255, 255, 255, .72);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid rgba(241, 235, 223, .16);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(6, 8, 11, .34), inset 0 1px 0 rgba(255, 255, 255, .22);
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 20px;
+  box-shadow: 0 14px 32px rgba(27, 22, 16, .26), inset 0 1px 0 rgba(255, 255, 255, .85);
 }
 /* the sheen that makes the top edge read as glass */
 .statcard::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
   background: linear-gradient(180deg,
-    rgba(255, 255, 255, .2) 0, rgba(255, 255, 255, .05) 34%, rgba(255, 255, 255, 0) 62%);
+    rgba(255, 255, 255, .5) 0, rgba(255, 255, 255, .1) 34%, rgba(255, 255, 255, 0) 62%);
 }
 .statcard::before {
   content: ""; position: absolute; left: 1.1rem; top: 0; width: 34px; height: 2px; z-index: 1;
-  background: var(--gold); border-radius: 2px;
+  background: var(--accent); border-radius: 2px;
 }
 .statcard b {
   position: relative; z-index: 1;
-  display: block; font-family: var(--serif); font-weight: 500;
-  font-size: clamp(1.6rem, 3.4vw, 2.1rem); line-height: 1.05; color: var(--ink);
+  display: block; font-family: var(--display); font-weight: 800; letter-spacing: -.03em;
+  font-size: clamp(1.6rem, 3.4vw, 2.1rem); line-height: 1.05; color: #17181a;
   font-variant-numeric: tabular-nums;
 }
 .statcard span {
   position: relative; z-index: 1;
-  display: block; font-size: .8rem; color: #ded6c7; margin-top: .3rem; line-height: 1.4;
+  display: block; font-size: .8rem; color: #45413c; margin-top: .3rem; line-height: 1.4;
 }
 /* No backdrop-filter (older Firefox/Safari) or the visitor asked for less
    transparency: keep the shape, drop the glass, stay opaque and legible. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .statcard { background: rgba(22, 28, 36, .9); }
+  .statcard { background: rgba(255, 255, 255, .95); }
 }
 @media (prefers-reduced-transparency: reduce) {
   .statcard {
-    background: #171d23;
+    background: var(--panel);
     -webkit-backdrop-filter: none; backdrop-filter: none;
-    box-shadow: none; border-color: var(--line);
+    box-shadow: var(--shadow-soft); border-color: var(--line);
   }
   .statcard::after { display: none; }
 }
 
 .hero__chip {
   position: absolute; left: var(--gutter); bottom: clamp(3.4rem, 6vw, 4.4rem); margin: 0;
-  font-size: .7rem; letter-spacing: .3em; text-transform: uppercase; color: var(--gold);
-  padding: .35rem .7rem; border: 1px solid var(--line); border-radius: 4px;
-  background: rgba(11, 13, 16, .5);
+  font-size: .7rem; letter-spacing: .26em; text-transform: uppercase; color: #f8f4ef;
+  font-weight: 600;
+  padding: .35rem .7rem; border: 1px solid rgba(255, 255, 255, .28); border-radius: 8px;
+  background: rgba(27, 26, 24, .55);
 }
 
 .ticker {
   position: relative; overflow: hidden;
-  border-top: 1px solid rgba(216, 178, 106, .4); border-bottom: 1px solid rgba(216, 178, 106, .4);
-  background: linear-gradient(90deg, #c9a15c, #e3c184 45%, #c08d47);
+  border-top: 1px solid rgba(23, 24, 26, .12); border-bottom: 1px solid rgba(23, 24, 26, .12);
+  background: linear-gradient(90deg, #e09a4d, #f0c189 45%, #d98f42);
 }
 .ticker__track { display: flex; width: max-content; animation: ticker 46s linear infinite; }
 .ticker__row {
   display: flex; align-items: center; gap: 1.6rem; padding: .55rem 1.6rem .55rem 0;
-  font-size: .74rem; letter-spacing: .2em; text-transform: uppercase; color: #21190c; font-weight: 600;
+  font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; color: #241a10; font-weight: 700;
   white-space: nowrap;
 }
 .ticker__row i { font-style: normal; opacity: .45; }
@@ -175,11 +156,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* -------------------------------------------------------------- 7. bands */
 .band { padding: clamp(3.2rem, 8vw, 5.6rem) var(--gutter); border-top: 1px solid var(--line-soft); }
 .band--about { background: var(--band); }
-.band--trades { background: var(--frame); }
+.band--trades { background: var(--bg); }
 .band--listings { background: var(--band); }
-.band--feature { background: var(--frame); }
+.band--feature { background: var(--bg); }
 .band--sources { background: var(--band-2); }
-.band--contact { background: linear-gradient(180deg, var(--frame), #0d1014); }
+.band--contact { background: linear-gradient(180deg, var(--bg-warm), var(--band-2)); }
 
 .band__grid { display: grid; gap: clamp(1.8rem, 4vw, 3.2rem); align-items: center; }
 .band__head {
@@ -193,7 +174,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 .feats { display: grid; gap: 1.1rem; margin: 1.6rem 0; }
 .feat { display: grid; grid-template-columns: 34px 1fr; gap: .8rem; align-items: start; }
-.feat__ico { color: var(--gold); }
+.feat__ico { color: var(--accent); }
 .feat b { display: block; font-size: .96rem; font-weight: 600; }
 .feat span { font-size: .87rem; color: var(--muted); line-height: 1.5; }
 
@@ -202,28 +183,33 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .shot img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 3; }
 .shot--tall img { aspect-ratio: 5 / 4; }
 .shot--wide img { aspect-ratio: 16 / 10; }
-.shot--contact img { aspect-ratio: 16 / 10; }
+/* a 4:3 drawing that sits on its own, centred, rather than filling the column */
+.shot--card { max-width: 30rem; margin-inline: auto; }
 .shot__note {
   position: absolute; left: .8rem; bottom: .75rem; margin: 0;
-  font-size: .72rem; letter-spacing: .04em; color: var(--ink-soft);
-  background: rgba(11, 13, 16, .92); border: 1px solid var(--line-soft);
-  padding: .3rem .6rem; border-radius: 6px;
+  font-size: .72rem; letter-spacing: .02em; font-weight: 500; color: #f4efe9;
+  background: rgba(27, 26, 24, .82); border: 1px solid rgba(255, 255, 255, .22);
+  padding: .32rem .65rem; border-radius: 9px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
 /* the tall about shot carries the floating coordinate card in its bottom-left,
    so its caption has to live at the top instead */
 .shot--tall .shot__note { bottom: auto; top: .8rem; }
 .shot__cta { position: absolute; right: 1rem; bottom: 1rem; }
 
+/* A white card laid over the picture, the way the reference floats its
+   property card on top of the house. */
 .floatcard {
   position: absolute; left: -0.6rem; bottom: 1.6rem;
   width: min(84%, 17rem); padding: 1rem 1.1rem;
-  background: rgba(20, 24, 29, .95); border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r);
   box-shadow: var(--shadow);
 }
-.floatcard__k { display: block; font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
+.floatcard__k { display: block; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
 .floatcard strong {
-  display: block; font-family: var(--serif); font-weight: 500; font-size: 1.5rem;
-  margin: .3rem 0 .2rem; font-variant-numeric: tabular-nums;
+  display: block; font-family: var(--display); font-weight: 700; font-size: 1.5rem;
+  letter-spacing: -.02em; margin: .3rem 0 .2rem; font-variant-numeric: tabular-nums;
 }
 .floatcard__m { display: block; font-size: .78rem; color: var(--muted); line-height: 1.45; }
 
@@ -232,17 +218,18 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .tcard { display: flex; min-width: 0; }
 .tcard__link {
   position: relative; display: flex; flex-direction: column; gap: .45rem;
-  flex: 1; padding: 1.15rem 1.1rem 1.2rem;
+  flex: 1; padding: 1.2rem 1.15rem 1.25rem;
   color: inherit; text-decoration: none;
-  background: linear-gradient(180deg, var(--panel), #151a20);
+  background: var(--panel);
   border: 1px solid var(--line-soft); border-radius: var(--r);
-  transition: transform .2s var(--ease), border-color .2s, background .2s;
+  box-shadow: var(--shadow-soft);
+  transition: transform .2s var(--ease), border-color .2s, box-shadow .2s;
 }
-.tcard__link:hover, .tcard__link:focus-visible { transform: translateY(-3px); border-color: var(--gold-dim); }
-.tcard__ico { color: var(--gold); margin-bottom: .35rem; }
-.tcard__link h3 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 1.16rem; line-height: 1.25; }
+.tcard__link:hover, .tcard__link:focus-visible { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow); }
+.tcard__ico { color: var(--accent); margin-bottom: .35rem; }
+.tcard__link h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.16rem; line-height: 1.2; letter-spacing: -.02em; }
 .tcard__link p { margin: 0; font-size: .86rem; color: var(--muted); line-height: 1.55; }
-.tcard__foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .8rem; font-size: .82rem; color: var(--gold); font-weight: 600; }
+.tcard__foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .8rem; font-size: .82rem; color: var(--accent-deep); font-weight: 700; }
 .tcard__arrow { font-variant-numeric: tabular-nums; transition: transform .2s var(--ease); }
 .tcard__link:hover .tcard__arrow { transform: translateX(4px); }
 
@@ -252,28 +239,29 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .lcard a {
   display: block; height: 100%; padding: .7rem .85rem .95rem;
   background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--r);
+  box-shadow: var(--shadow-soft);
   transition: transform .2s var(--ease), border-color .2s, box-shadow .2s;
 }
-.lcard a:hover { transform: translateY(-3px); border-color: var(--gold-dim); box-shadow: var(--shadow); }
+.lcard a:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow); }
 .lcard__img {
   width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
-  border-radius: 9px; border: 1px solid var(--line-soft); background: #0f1216; margin-bottom: .7rem;
+  border-radius: 10px; border: 1px solid var(--line-soft); background: var(--band-2); margin-bottom: .7rem;
 }
 .lcard__img--photo { object-fit: cover; }
-.lcard h3 { margin: 0 0 .3rem; font-family: var(--serif); font-weight: 500; font-size: 1.12rem; line-height: 1.25; overflow-wrap: anywhere; }
+.lcard h3 { margin: 0 0 .3rem; font-family: var(--display); font-weight: 700; font-size: 1.1rem; line-height: 1.2; letter-spacing: -.02em; overflow-wrap: anywhere; }
 .lcard__meta { display: flex; flex-wrap: wrap; gap: .3rem .6rem; margin: 0; font-size: .8rem; color: var(--muted); }
-.lcard__dist { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
+.lcard__dist { color: var(--accent-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
 .lcard__flag {
-  display: inline-block; margin-top: .55rem; padding: .18rem .5rem; border-radius: 5px;
-  font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 600;
+  display: inline-block; margin-top: .55rem; padding: .2rem .55rem; border-radius: 8px;
+  font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; font-weight: 700;
 }
-.lcard__flag--ok { color: var(--palm); border: 1px solid rgba(63, 139, 102, .45); }
-.lcard__flag--warn { color: var(--gold); border: 1px solid rgba(216, 178, 106, .45); }
+.lcard__flag--ok { color: var(--palm); border: 1px solid rgba(47, 107, 80, .4); background: rgba(47, 107, 80, .08); }
+.lcard__flag--warn { color: var(--clay); border: 1px solid rgba(168, 68, 42, .4); background: rgba(168, 68, 42, .08); }
 
 /* feature --------------------------------------------------- */
 .facts { display: grid; gap: .55rem; margin: 1.4rem 0 1.7rem; }
 .facts > div { display: grid; grid-template-columns: 9.5rem 1fr; gap: .8rem; font-size: .9rem; border-bottom: 1px solid var(--line-soft); padding-bottom: .5rem; }
-.facts dt { color: var(--gold); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; padding-top: .15rem; }
+.facts dt { color: var(--accent-deep); font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; padding-top: .15rem; }
 .facts dd { margin: 0; color: var(--ink-soft); }
 .facts--tail { margin-bottom: 0; }
 
@@ -283,28 +271,29 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%;
   border: 1px solid var(--line); color: var(--ink-soft); transition: color .2s, border-color .2s, background .2s;
 }
-.quoter__nav:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--glass); }
+.quoter__nav:hover { color: var(--accent-deep); border-color: var(--accent); background: var(--panel); }
 .quote {
   position: relative; margin: 0; padding: 1.5rem clamp(1.1rem, 3vw, 2rem) 1.4rem;
-  background: linear-gradient(180deg, var(--glass-2), var(--glass));
-  border: 1px solid var(--line); border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--line-soft); border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
 }
-.quote__mark { color: rgba(216, 178, 106, .35); margin-bottom: .5rem; }
+.quote__mark { color: rgba(138, 74, 34, .3); margin-bottom: .5rem; }
 .quote__text {
-  margin: 0 0 1rem; font-family: var(--serif); font-size: clamp(1.05rem, 1.7vw, 1.35rem);
-  line-height: 1.5; color: var(--ink);
+  margin: 0 0 1rem; font-family: var(--display); font-weight: 500; font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  line-height: 1.5; letter-spacing: -.02em; color: var(--ink);
 }
 .quote__foot { display: flex; flex-wrap: wrap; gap: .35rem .9rem; align-items: baseline; }
-.quote__who { font-weight: 600; font-size: .92rem; color: var(--gold); }
+.quote__who { font-weight: 700; font-size: .92rem; color: var(--accent-deep); }
 .quote__meta { font-size: .8rem; color: var(--muted); }
 .quote__src { font-size: .8rem; color: var(--muted); }
 .quote__src a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
-.quote__src a:hover { color: var(--gold); }
-.quoter__count { margin: 1.1rem 0 0; font-size: .78rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.quote__src a:hover { color: var(--accent-deep); }
+.quoter__count { margin: 1.1rem 0 0; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-align: center; }
 
 /* contact --------------------------------------------------- */
 .addr { display: grid; gap: .9rem; align-content: start; }
-.addr > div { border-left: 2px solid var(--gold-dim); padding-left: .95rem; }
+.addr > div { border-left: 2px solid var(--accent); padding-left: .95rem; }
 .addr dt { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: .2rem; }
 .addr dd { font-size: .96rem; color: var(--ink); }
 .addr dd small { display: block; color: var(--muted); font-size: .8rem; margin-top: .2rem; }
@@ -316,17 +305,17 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: grid; gap: .8rem;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 }
-.navcards .tcard__link { background: linear-gradient(180deg, var(--panel), #151a20); }
+.navcards .tcard__link { background: var(--panel); }
 
 .pagehead {
   padding: clamp(2.4rem, 6vw, 4rem) var(--gutter) clamp(1.6rem, 4vw, 2.4rem);
   background:
-    radial-gradient(120% 140% at 12% -10%, rgba(216, 178, 106, .13), transparent 60%),
-    var(--band);
-  border-bottom: 1px solid var(--line-soft);
+    radial-gradient(120% 140% at 12% -10%, rgba(232, 167, 92, .38), transparent 62%),
+    var(--bg-warm);
+  border-bottom: 1px solid var(--line);
 }
 .pagehead h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); margin-bottom: .35em; }
-.pagehead__lede { color: var(--ink-soft); max-width: 58ch; margin: 0; }
+.pagehead__lede { color: var(--ink-soft); font-weight: 400; max-width: 58ch; margin: 0; }
 .pagehead__row { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-top: 1.4rem; }
 .band__note { color: var(--muted); font-size: .84rem; max-width: 62ch; margin: 1.3rem 0 0; }
 
@@ -335,9 +324,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
    picture shrinks, and aspect-ratio reserves the space before the file decodes. */
 .pageshot {
   position: relative; isolation: isolate; margin: clamp(1.5rem, 4vw, 2.2rem) 0 0;
-  overflow: hidden; background: #0b0d10;
+  overflow: hidden; background: #1b1a18;
   border: 1px solid var(--line); border-radius: clamp(26px, 4.6vw, 44px);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .13);
+  box-shadow: var(--shadow);
 }
 .pageshot img {
   display: block; width: 100%; height: 100%;
@@ -356,19 +345,40 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
    evidence — no separate "trust us" copy needed. */
 .srclist { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
 .srcrow { border: 1px solid var(--line-soft); border-radius: var(--r); padding: 1rem 1.1rem; background: var(--panel); }
-.srcrow__name { font-family: var(--serif); font-weight: 500; font-size: 1.12rem; line-height: 1.25; margin: 0 0 .3rem; overflow-wrap: anywhere; }
+.srcrow__name { font-family: var(--display); font-weight: 500; font-size: 1.12rem; line-height: 1.25; margin: 0 0 .3rem; overflow-wrap: anywhere; }
 .srcrow__meta { display: flex; flex-wrap: wrap; gap: .3rem .8rem; margin: 0 0 .75rem; font-size: .8rem; color: var(--muted); }
-.srcrow__warn { color: var(--gold); font-weight: 600; }
+.srcrow__warn { color: var(--accent); font-weight: 600; }
 .srcrow__links { display: grid; gap: .4rem; }
 .srcrow__links li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; font-size: .87rem; }
 .srcrow__links a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
-.srcrow__links a:hover { color: var(--gold); }
+.srcrow__links a:hover { color: var(--accent); }
 .srcrow__date { color: var(--muted); font-size: .76rem; letter-spacing: .05em; white-space: nowrap; }
 .facts dd small { display: block; color: var(--muted); font-size: .8rem; margin-top: .2rem; }
 
 /* ------------------------------------------------------- 9. reveal / js */
 .dk-js [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
 .dk-js [data-reveal].is-in { opacity: 1; transform: none; }
+
+/* A group of cards lands as a short sequence instead of one slab. The children
+   animate and the container holds still, so a card the JS appends after the
+   observer has already fired plays its own entrance rather than staying blank. */
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.dk-js [data-reveal][data-stagger] { opacity: 1; transform: none; transition: none; }
+.dk-js [data-reveal][data-stagger] > * { opacity: 0; }
+.dk-js [data-reveal][data-stagger].is-in > * { animation: rise-in .46s var(--ease) both; }
+.dk-js [data-reveal][data-stagger].is-in > :nth-child(2) { animation-delay: 55ms; }
+.dk-js [data-reveal][data-stagger].is-in > :nth-child(3) { animation-delay: 110ms; }
+.dk-js [data-reveal][data-stagger].is-in > :nth-child(4) { animation-delay: 165ms; }
+.dk-js [data-reveal][data-stagger].is-in > :nth-child(5) { animation-delay: 220ms; }
+.dk-js [data-reveal][data-stagger].is-in > :nth-child(n+6) { animation-delay: 275ms; }
+
+/* Press feedback: the pointer gets an answer within the tap, not only on hover.
+   (.pill:active itself lives in site-chrome.css, where every page picks it up.) */
+.tcard__link:active, .lcard a:active, .srclist a:active { transform: translateY(0) scale(.985); }
+
+/* A drawing under a cursor breathes in, clipped by the frame it already has. */
+.shot img { transition: transform .55s var(--ease); }
+.shot:hover img, .shot:focus-within img { transform: scale(1.018); }
 
 /* ------------------------------------------------------- 10. responsive */
 @media (min-width: 620px) {
@@ -391,7 +401,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
      showing the empty road on the left. */
   .hero__media img { object-position: 84% 56%; }
   .statcards { margin-left: 0; width: 100%; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
-  .floatcard { position: static; width: 100%; margin-top: -1.4rem; }
+  /* In flow the card is a block sibling of an inline <img>, and inline content
+     paints after block backgrounds — so the picture ate the card's top 22px and
+     the label landed on the drawing. A positioned card paints above it. */
+  .floatcard { position: relative; left: 0; bottom: auto; z-index: 1; width: 100%; margin-top: -1.4rem; }
   .facts > div { grid-template-columns: 1fr; gap: .15rem; }
 }
 @media (max-width: 639px) {
@@ -404,20 +417,32 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   html { scroll-behavior: auto; }
   .ticker__track { animation: none; }
   .dk-js [data-reveal] { opacity: 1; transform: none; transition: none; }
+  /* the staggered children start at opacity 0, so the guard has to lift them */
+  .dk-js [data-reveal][data-stagger] > * { opacity: 1; animation: none; }
+  .shot img { transition: none; }
+  .shot:hover img, .shot:focus-within img { transform: none; }
   .tcard__link:hover, .lcard a:hover { transform: none; }
 }
 @media (prefers-contrast: more) {
-  :root { --muted: #c4bcad; --line: rgba(216, 178, 106, .5); --line-soft: rgba(241, 235, 223, .22); }
-  .hero::after { background: rgba(11, 13, 16, .92); }
+  :root { --muted: #3f3a35; --line: rgba(23, 24, 26, .3); --line-soft: rgba(23, 24, 26, .18); }
+  .hero::after { background: rgba(27, 26, 24, .92); }
+  .lcard__flag--warn { color: #8d3520; }
 }
 @media print {
   .ticker, .quoter__nav, .hero__ghost, .pageshot { display: none !important; }
   .dk-frame { background: #fff; }
   body { background: #fff; color: #000; }
+  /* The hero is a photo with light type over it; on paper both the backdrop and
+     the light-on-dark colours have to go. */
+  .hero { background: #fff; }
   .hero__media { display: none; }
+  .hero__copy, .hero__lede, .hero .eyebrow, .hero__chip { color: #000; }
+  .hero__chip { border-color: #999; background: none; }
   /* glass over white paper prints as a muddy rectangle */
   .statcard { background: #fff; border: 1px solid #bbb; box-shadow: none; }
   .statcard::after { display: none; }
   .statcard b, .statcard span { color: #000; }
+  .shot__note { position: static; background: none; border: 0; color: #000; padding: .4rem 0 0; }
   .dk-js [data-reveal] { opacity: 1 !important; transform: none !important; }
+  .dk-js [data-reveal][data-stagger] > * { opacity: 1 !important; animation: none !important; }
 }
