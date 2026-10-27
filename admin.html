@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store admin — ICHHAPUR Market</title>
+<meta name="description" content="Local editing panel for the ICHHAPUR market listings: add, change or remove a shop, attach a photograph, and export the result back into the site's data file.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b0d10">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d10'/%3E%3Cpath d='M6 15 16 7l10 8v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1z' fill='none' stroke='%23d8b26a' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Mukta:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="assets/css/admin.css">
+<link rel="stylesheet" href="assets/css/site-chrome.css">
+</head>
+
+<body class="dk adm">
+
+<a class="skip" href="#admMain">Skip to the listings</a>
+
+<!-- The masthead and the back bar are the shared ones that site-nav.js puts on
+     every page of this site, so this page does not write its own header. -->
+
+<main id="admMain">
+
+  <!-- ============ what this page actually is ============ -->
+  <section class="notice" aria-labelledby="noticeTitle">
+    <h1 id="noticeTitle">Editing happens in this browser only</h1>
+    <p>
+      Every change is written to this browser's local storage. There is no server behind this
+      page, so an edit here does <strong>not</strong> reach a visitor on another phone or
+      laptop, and there is no password because there is nothing to protect yet &mdash; anyone
+      who opens this file can type in it.
+    </p>
+    <p class="notice__sync">
+      What <em>is</em> live: the moment you save, the guide and the landing page already open in
+      <strong>other tabs of this browser</strong> re-render with your change. To put a listing in
+      front of visitors, use <strong>Export</strong> below and paste the result into
+      <code>data/stores.js</code> &mdash; or host the site, and this panel can write to a real
+      database instead.
+    </p>
+  </section>
+
+  <!-- ============ toolbar ============ -->
+  <section class="toolbar" aria-label="Listing tools">
+    <div class="toolbar__grow">
+      <div class="field field--search">
+        <label class="field__label" for="admSearch">Find a listing</label>
+        <input id="admSearch" type="search" autocomplete="off" placeholder="Name, locality or trade…">
+      </div>
+      <div class="field">
+        <label class="field__label" for="admCat">Trade</label>
+        <select id="admCat"><option value="">All trades</option></select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="admStatus">Status</label>
+        <select id="admStatus">
+          <option value="">Any status</option>
+          <option value="listed">Publicly listed</option>
+          <option value="needs-confirmation">Needs confirmation</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar__acts">
+      <button class="btn btn--primary" id="btnAdd" type="button">Add a store</button>
+      <button class="btn" id="btnExport" type="button">Export</button>
+      <button class="btn btn--danger" id="btnReset" type="button" disabled>Discard local draft</button>
+    </div>
+  </section>
+
+  <p class="count" id="admCount" role="status" aria-live="polite"></p>
+
+  <!-- ============ the list ============ -->
+  <section class="listwrap" aria-label="Current listings">
+    <table class="list" id="admList">
+      <caption class="sr-only">Listings in the working set, with their trade, status, map position and actions</caption>
+      <thead>
+        <tr>
+          <th scope="col" class="c-img">Picture</th>
+          <th scope="col">Store</th>
+          <th scope="col">Trade</th>
+          <th scope="col">Status</th>
+          <th scope="col">Position</th>
+          <th scope="col">Sources</th>
+          <th scope="col"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody id="admRows"></tbody>
+    </table>
+    <p class="empty" id="admEmpty" hidden>No listing matches that filter. <button class="linkish" id="btnClear" type="button">Clear the filters</button>.</p>
+  </section>
+
+  <!-- ============ editor ============ -->
+  <section class="editor" id="editor" hidden aria-labelledby="edTitle">
+    <div class="editor__head">
+      <h2 id="edTitle">Add a store</h2>
+      <p class="editor__sub" id="edSub"></p>
+    </div>
+
+    <form id="edForm" novalidate>
+      <fieldset class="grp">
+        <legend>Identity</legend>
+
+        <div class="grid2">
+          <div class="field">
+            <label class="field__label" for="fName">Store name <span class="req" aria-hidden="true">*</span></label>
+            <input id="fName" name="name" type="text" required autocomplete="off"
+                   aria-describedby="hName" placeholder="e.g. Sumitra Medical Store">
+            <p class="hint" id="hName">Exactly as the shopboard reads, if you can see it.</p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="fId">Address id</label>
+            <input id="fId" name="id" type="text" autocomplete="off" aria-describedby="hId"
+                   placeholder="left blank it is built from the name">
+            <p class="hint" id="hId">Used in links like <code>index.html#open=&lt;id&gt;</code>. Changing it breaks links already shared.</p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="fCat">Trade</label>
+            <select id="fCat" name="category" aria-describedby="hCat"></select>
+            <p class="hint" id="hCat">Decides which drawing stands in when there is no photograph.</p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="fStatus">Status</label>
+            <select id="fStatus" name="status" aria-describedby="hStatus">
+              <option value="needs-confirmation">Listing needs confirmation</option>
+              <option value="listed">Publicly listed</option>
+            </select>
+            <p class="hint" id="hStatus">Only choose “Publicly listed” when at least two sources, or a visit, back it up.</p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="grp">
+        <legend>Where it is</legend>
+
+        <div class="grid2">
+          <div class="field">
+            <label class="field__label" for="fLocality">Locality</label>
+            <input id="fLocality" name="locality" type="text" autocomplete="off"
+                   aria-describedby="hLocality" placeholder="e.g. Ichhapur, near Barik Chhak on SH9">
+            <p class="hint" id="hLocality">A landmark people actually use, not a survey number.</p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="fAddress">Address line</label>
+            <input id="fAddress" name="addressLine" type="text" autocomplete="off"
+                   aria-describedby="hAddress" placeholder="Village, block, district, PIN">
+            <p class="hint" id="hAddress">Publish only what a source prints. Leave the PIN out if you are not sure of it.</p>
+          </div>
+        </div>
+
+        <div class="field field--wide">
+          <label class="field__label" for="fLink">Map link or coordinates</label>
+          <textarea id="fLink" name="link" rows="2" autocomplete="off" spellcheck="false"
+                    aria-describedby="hLink"
+                    placeholder="https://www.google.com/maps/place/…  or  21.043619, 86.549682"></textarea>
+          <p class="hint" id="hLink">Paste the shop's own map link and press “Read the position”. It also understands Mappls, OSM and plain “lat, lng”.</p>
+          <p class="acts-inline">
+            <button class="btn btn--small" id="btnParse" type="button">Read the position</button>
+            <span class="parse" id="parseMsg" role="status" aria-live="polite"></span>
+          </p>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label class="field__label" for="fLat">Latitude</label>
+            <input id="fLat" name="lat" type="text" inputmode="decimal" autocomplete="off"
+                   aria-describedby="hLat" placeholder="21.043619">
+            <p class="hint" id="hLat">Between &minus;90 and 90. Decimal degrees.</p>
+          </div>
+          <div class="field">
+            <label class="field__label" for="fLng">Longitude</label>
+            <input id="fLng" name="lng" type="text" inputmode="decimal" autocomplete="off"
+                   aria-describedby="hLng" placeholder="86.549682">
+            <p class="hint" id="hLng">Between &minus;180 and 180. Leave both blank if no source places this shop.</p>
+          </div>
+        </div>
+
+        <div class="field field--wide">
+          <label class="field__label" for="fPosLabel">Where the position came from</label>
+          <input id="fPosLabel" name="coordinatesLabel" type="text" autocomplete="off"
+                 aria-describedby="hPosLabel"
+                 placeholder="e.g. Position published by a public map listing">
+          <p class="hint" id="hPosLabel">Shown under the coordinates. Say who placed the pin; do not write “exact location”.</p>
+        </div>
+
+        <div class="field field--wide">
+          <label class="field__label" for="fDir">Directions note</label>
+          <textarea id="fDir" name="note" rows="2" aria-describedby="hDir"
+                    placeholder="What is still unresolved about this listing, or how to find the shutter."></textarea>
+          <p class="hint" id="hDir">This is the “Unresolved” line on the landing page. The “Get directions” button is built from the coordinates above, so it needs no editing.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="grp">
+        <legend>What the listing says</legend>
+
+        <div class="field field--wide">
+          <label class="field__label" for="fDesc">Description</label>
+          <textarea id="fDesc" name="description" rows="3" aria-describedby="hDesc"
+                    placeholder="One or two sentences of what a source actually states."></textarea>
+          <p class="hint" id="hDesc">No “best”, no “most popular”, no stock claims. If you did not read it somewhere, do not write it here.</p>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label class="field__label" for="fPhone">Telephone</label>
+            <input id="fPhone" name="phone" type="tel" autocomplete="off" aria-describedby="hPhone"
+                   placeholder="Leave blank unless the shop gave it to you">
+            <p class="hint" id="hPhone">A directory number that is not the shop's is worse than no number.</p>
+          </div>
+          <div class="field">
+            <label class="field__label" for="fHours">Opening hours</label>
+            <input id="fHours" name="hours" type="text" autocomplete="off" aria-describedby="hHours"
+                   placeholder="e.g. Mon–Sun, 7:00 am – 11:30 pm (per public listing)">
+            <p class="hint" id="hHours">Say where the hours came from if you did not see the board yourself.</p>
+          </div>
+        </div>
+
+        <div class="field field--wide">
+          <label class="field__label" for="fKeys">Search words</label>
+          <input id="fKeys" name="keywords" type="text" autocomplete="off" aria-describedby="hKeys"
+                 placeholder="medicine, pharmacy, chemist, health">
+          <p class="hint" id="hKeys">Comma-separated. Words a visitor might type, in Odia or English.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="grp">
+        <legend>Picture</legend>
+
+        <div class="photo">
+          <div class="photo__prev" id="photoPrev">
+            <img id="photoImg" alt="" width="640" height="360">
+            <span class="photo__tag" id="photoTag"></span>
+          </div>
+          <div class="photo__ctl">
+            <div class="field">
+              <label class="field__label" for="fPhoto">Photograph of this shop</label>
+              <input id="fPhoto" name="photo" type="file" accept="image/*" aria-describedby="hPhoto">
+              <p class="hint" id="hPhoto">Shrunk to 1280&nbsp;px and kept in this browser. A photo of a real shopfront needs that shopkeeper's permission first.</p>
+            </div>
+            <div class="field">
+              <label class="field__label" for="fPhotoAlt">Describe the photo</label>
+              <input id="fPhotoAlt" name="photoAlt" type="text" autocomplete="off"
+                     aria-describedby="hPhotoAlt" placeholder="What is actually in the frame">
+              <p class="hint" id="hPhotoAlt">Read out by screen readers. Never guess at a name that is not on the board.</p>
+            </div>
+            <p class="acts-inline">
+              <button class="btn btn--small" id="btnPhotoClear" type="button">Remove the photo</button>
+              <span class="hint" id="photoMsg" role="status" aria-live="polite"></span>
+            </p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="grp">
+        <legend>Sources</legend>
+        <p class="hint hint--top" id="hSrc">
+          Every claim on the public pages traces back to one of these. A listing with no source
+          cannot be marked “Publicly listed”.
+        </p>
+        <div class="srcs" id="srcRows"></div>
+        <p class="acts-inline">
+          <button class="btn btn--small" id="btnAddSrc" type="button">Add a source</button>
+        </p>
+      </fieldset>
+
+      <p class="err" id="edErr" role="alert" hidden></p>
+
+      <div class="editor__foot">
+        <button class="btn btn--primary" id="btnSave" type="submit">Save listing</button>
+        <button class="btn" id="btnCancel" type="button">Close without saving</button>
+        <button class="btn btn--danger" id="btnDelete" type="button" hidden>Delete this listing</button>
+      </div>
+      <p class="saved" id="edSaved" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+
+  <!-- ============ export ============ -->
+  <section class="export" id="exportBox" hidden aria-labelledby="exTitle">
+    <div class="export__head">
+      <h2 id="exTitle">Export the working set</h2>
+      <p>
+        This is the whole listing set as it stands in this browser. Two ways to publish it:
+      </p>
+      <ol>
+        <li><strong>Keep the file.</strong> Save it next to <code>data/stores.js</code> and replace that file's <code>MARKET_DATA</code> object with this content, keeping the <code>window.MARKET_DATA = …;</code> wrapper at the top of the file.</li>
+        <li><strong>Photographs.</strong> Any photo you added is inside this text as a data URL, which is why the file gets big. For a hosted site, save each picture into <code>assets/img/</code> and put its path in the <code>photo</code> field instead.</li>
+      </ol>
+      <p class="acts-inline">
+        <button class="btn btn--primary" id="btnDownload" type="button">Download .json</button>
+        <button class="btn" id="btnShow" type="button">Show the text</button>
+        <button class="btn" id="btnCloseExport" type="button">Close</button>
+      </p>
+    </div>
+    <pre id="exportText" hidden></pre>
+  </section>
+
+</main>
+
+<footer class="adm-foot">
+  <p class="meter" id="admMeter"></p>
+  <p class="savedat" id="admSavedAt"></p>
+</footer>
+
+<!-- one toast, reused -->
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+<script src="data/stores.js"></script>
+<script src="assets/js/market-data.js"></script>
+<script src="assets/js/site-nav.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760" role="img" aria-label="Illustration of a small-town market street: three shop stalls with striped cloth awnings, crates of vegetables, sacks, a hand cart and a cycle rickshaw, with a few shoppers. The signboards are deliberately blank.">
+  <title>Illustrated market street with shop stalls and awnings</title>
+  <desc>A flat editorial illustration in terracotta, marigold, indigo and cream. It depicts a generic market street, not the actual layout of ICHHAPUR market. The stall signboards are left blank on purpose so that no shop name is invented.</desc>
+
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1014"/><stop offset=".58" stop-color="#171c23"/><stop offset="1" stop-color="#242a32"/></linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2d323b"/>
+      <stop offset="1" stop-color="#4f4636"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c0e12" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#0c0e12" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- one tile = two awning stripes with a scalloped hem; tiled by pattern -->
+    <pattern id="awnA" patternUnits="userSpaceOnUse" width="52" height="24">
+      <path d="M0 0h26v9q-13 14-26 0z" fill="#b8552f"/>
+      <path d="M26 0h26v9q-13 14-26 0z" fill="#cfc7b6"/>
+    </pattern>
+    <pattern id="awnB" patternUnits="userSpaceOnUse" width="52" height="24">
+      <path d="M0 0h26v9q-13 14-26 0z" fill="#2f4f76"/>
+      <path d="M26 0h26v9q-13 14-26 0z" fill="#d8b26a"/>
+    </pattern>
+    <pattern id="awnC" patternUnits="userSpaceOnUse" width="52" height="24">
+      <path d="M0 0h26v9q-13 14-26 0z" fill="#3f8b66"/>
+      <path d="M26 0h26v9q-13 14-26 0z" fill="#cfc7b6"/>
+    </pattern>
+
+    <!-- reusable stall: posts, wall, dark interior, counter -->
+    <g id="stall">
+      <rect x="0" y="36" width="18" height="248" rx="4" fill="#7a5f28"/>
+      <rect x="302" y="36" width="18" height="248" rx="4" fill="#7a5f28"/>
+      <rect x="14" y="36" width="292" height="248" fill="#262b33"/>
+      <rect x="14" y="36" width="292" height="60" fill="#2a2f38"/>
+      <rect x="46" y="96" width="228" height="188" rx="6" fill="#0c0e12" opacity=".82"/>
+      <rect x="46" y="96" width="228" height="188" rx="6" fill="none" stroke="#7a5f28" stroke-width="4"/>
+      <rect x="30" y="214" width="260" height="18" rx="5" fill="#b8552f"/>
+      <rect x="30" y="232" width="260" height="52" rx="4" fill="#a8763a"/>
+      <rect x="30" y="232" width="260" height="52" rx="4" fill="none" stroke="#7a5f28" stroke-width="3"/>
+    </g>
+  </defs>
+
+  <!-- sky, sun, birds -->
+  <rect width="1200" height="760" fill="url(#sky)"/>
+  <circle cx="1004" cy="132" r="74" fill="#d8b26a" opacity=".34"/>
+  <circle cx="1004" cy="132" r="40" fill="#d8b26a" opacity=".4"/>
+  <g fill="none" stroke="#8b8272" stroke-width="3" stroke-linecap="round" opacity=".5">
+    <path d="M150 96q14-13 27 0 13-13 27 0"/>
+    <path d="M242 62q11-10 21 0 10-10 21 0"/>
+    <path d="M846 78q12-11 23 0 11-11 23 0"/>
+  </g>
+
+  <!-- distant treeline -->
+  <g opacity=".2" fill="#2f4f76">
+    <path d="M0 470c60-26 96 6 148-14 54-22 86 12 140-6 62-22 96 16 156-2 58-18 92 14 148-2 54-16 88 14 142 0 52-14 86 12 140 0 48-10 82 10 126 2v70H0z"/>
+    <path d="M96 470c-6-30 4-52 22-64-24 2-42-10-52-30 22 12 42 8 56-6-8 24 4 42 20 52 10-30-4-58-24-72 30 4 52 26 58 56 4-26-4-46-16-60 26 12 42 38 42 72 0 26-8 42-14 54z"/>
+    <path d="M1084 470c-8-34 2-58 24-72-28 2-48-12-60-36 26 14 48 10 66-8-10 28 4 48 24 60 10-36-6-66-28-82 36 6 60 32 66 66 4-30-4-52-18-68 30 14 48 44 48 82 0 30-10 48-16 58z"/>
+  </g>
+
+  <!-- ground -->
+  <rect y="560" width="1200" height="200" fill="url(#ground)"/>
+  <rect y="560" width="1200" height="46" fill="url(#shade)"/>
+  <g stroke="#45402f" stroke-width="3" stroke-linecap="round" opacity=".7" fill="none">
+    <path d="M60 664h180M320 700h240M660 648h150M880 690h220M120 726h140M700 730h180"/>
+  </g>
+
+  <!-- back row of smaller stalls -->
+  <g opacity=".45">
+    <rect x="120" y="330" width="150" height="120" fill="#4f4636"/>
+    <rect x="112" y="312" width="166" height="20" rx="6" fill="#2f4f76"/>
+    <rect x="420" y="342" width="130" height="108" fill="#4f4636"/>
+    <rect x="412" y="324" width="146" height="20" rx="6" fill="#b8552f"/>
+    <rect x="900" y="336" width="150" height="114" fill="#4f4636"/>
+    <rect x="892" y="318" width="166" height="20" rx="6" fill="#3f8b66"/>
+  </g>
+
+  <!-- STALL A -->
+  <g>
+    <rect x="78" y="248" width="364" height="44" rx="8" fill="#eae4d8" stroke="#b8552f" stroke-width="5"/>
+    <use href="#stall" x="90" y="288"/>
+    <rect x="78" y="300" width="364" height="24" fill="url(#awnA)"/>
+    <rect x="78" y="296" width="364" height="8" rx="4" fill="#8f3f24"/>
+    <!-- produce on the counter -->
+    <g>
+      <rect x="52" y="500" width="86" height="58" rx="6" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+      <circle cx="74" cy="500" r="15" fill="#b8552f"/><circle cx="104" cy="497" r="17" fill="#d8b26a"/>
+      <circle cx="128" cy="502" r="13" fill="#b8552f"/>
+      <rect x="152" y="510" width="78" height="48" rx="6" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+      <g fill="#3f8b66"><ellipse cx="172" cy="508" rx="13" ry="8"/><ellipse cx="196" cy="504" rx="14" ry="8"/><ellipse cx="216" cy="510" rx="11" ry="7"/></g>
+      <rect x="244" y="496" width="92" height="62" rx="6" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+      <g fill="#d8b26a"><circle cx="266" cy="496" r="14"/><circle cx="292" cy="492" r="16"/><circle cx="318" cy="498" r="12"/></g>
+    </g>
+  </g>
+
+  <!-- STALL B -->
+  <g>
+    <use href="#stall" x="468" y="306"/>
+    <rect x="468" y="318" width="312" height="24" fill="url(#awnB)"/>
+    <rect x="468" y="314" width="312" height="8" rx="4" fill="#22374f"/>
+    <g>
+      <rect x="430" y="512" width="80" height="46" rx="6" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+      <g fill="#8f3f24"><circle cx="450" cy="510" r="11"/><circle cx="472" cy="507" r="12"/><circle cx="494" cy="511" r="10"/></g>
+      <!-- stacked gunny sacks -->
+      <g fill="#2a2f38" stroke="#3d382b" stroke-width="3">
+        <path d="M530 558v-46c0-14 12-22 28-22s28 8 28 22v46z"/>
+        <path d="M540 512c-4-16 6-28 22-28s26 12 22 28z"/>
+      </g>
+      <g fill="#3f8b66"><ellipse cx="600" cy="540" rx="16" ry="9"/><ellipse cx="628" cy="534" rx="17" ry="9"/></g>
+      <rect x="576" y="544" width="72" height="14" rx="5" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+    </g>
+  </g>
+
+  <!-- STALL C -->
+  <g>
+    <rect x="806" y="266" width="364" height="44" rx="8" fill="#eae4d8" stroke="#3f8b66" stroke-width="5"/>
+    <use href="#stall" x="818" y="300"/>
+    <rect x="806" y="312" width="364" height="24" fill="url(#awnC)"/>
+    <rect x="806" y="308" width="364" height="8" rx="4" fill="#275d45"/>
+    <!-- hanging goods -->
+    <g stroke="#7a5f28" stroke-width="2" fill="none">
+      <path d="M850 340v34M900 340v46M950 340v30M1000 340v44M1050 340v34"/>
+    </g>
+    <g fill="#d8b26a">
+      <path d="M838 374h24l-4 30h-16z"/><path d="M988 384h24l-4 30h-16z"/>
+    </g>
+    <g fill="#b8552f">
+      <path d="M888 386h24l-4 34h-16z"/><path d="M1038 374h24l-4 30h-16z"/>
+    </g>
+    <path d="M938 370h24l-4 28h-16z" fill="#3f8b66"/>
+    <g>
+      <rect x="880" y="506" width="96" height="52" rx="6" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+      <g fill="#2f4f76"><ellipse cx="902" cy="504" rx="13" ry="9"/><ellipse cx="928" cy="500" rx="14" ry="9"/><ellipse cx="954" cy="505" rx="12" ry="8"/></g>
+      <rect x="996" y="514" width="88" height="44" rx="6" fill="#a8763a" stroke="#7a5f28" stroke-width="3"/>
+      <g fill="#d8b26a"><circle cx="1016" cy="512" r="11"/><circle cx="1040" cy="509" r="12"/><circle cx="1064" cy="513" r="10"/></g>
+    </g>
+  </g>
+
+  <!-- hand cart -->
+  <g>
+    <rect x="596" y="606" width="150" height="42" rx="6" fill="#b8552f"/>
+    <rect x="596" y="606" width="150" height="10" fill="#8f3f24"/>
+    <path d="M746 622h34v-30" fill="none" stroke="#8b8272" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="644" cy="670" r="26" fill="none" stroke="#0c0e12" stroke-width="7"/>
+    <circle cx="644" cy="670" r="5" fill="#0c0e12"/>
+    <g stroke="#8b8272" stroke-width="3"><path d="M644 646v48M620 670h48M627 653l34 34M661 653l-34 34"/></g>
+  </g>
+
+  <!-- cycle rickshaw -->
+  <g>
+    <circle cx="238" cy="672" r="34" fill="none" stroke="#0c0e12" stroke-width="8"/>
+    <circle cx="356" cy="678" r="24" fill="none" stroke="#0c0e12" stroke-width="7"/>
+    <g stroke="#0c0e12" stroke-width="4" fill="none"><path d="M238 638v68M204 672h68M214 648l48 48M262 648l-48 48"/></g>
+    <path d="M262 664h74l16-46h-58z" fill="#2f4f76"/>
+    <path d="M286 618q30-46 70-30 26 10 20 34z" fill="#b8552f"/>
+    <path d="M352 618q22 4 26 26" fill="none" stroke="#8b8272" stroke-width="6" stroke-linecap="round"/>
+    <path d="M262 664l-24 14" stroke="#8b8272" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- shoppers, no faces -->
+  <g fill="#0c0e12">
+    <g opacity=".9">
+      <circle cx="430" cy="600" r="17"/>
+      <path d="M430 619c-24 0-38 18-40 44l-6 60h92l-6-60c-2-26-16-44-40-44z"/>
+      <path d="M470 646l26 10-14 40-24-12z" fill="#b8552f"/>
+    </g>
+    <g opacity=".82">
+      <circle cx="820" cy="612" r="16"/>
+      <path d="M820 630c-22 0-35 17-37 42l-6 56h86l-6-56c-2-25-15-42-37-42z" fill="#2f4f76"/>
+      <path d="M858 660l24 8-12 36-22-10z" fill="#d8b26a"/>
+    </g>
+    <g opacity=".7">
+      <circle cx="1078" cy="628" r="14"/>
+      <path d="M1078 644c-19 0-30 14-32 36l-5 48h74l-5-48c-2-22-13-36-32-36z"/>
+    </g>
+  </g>
+
+  <!-- foreground shadow + warm haze -->
+  <ellipse cx="600" cy="742" rx="560" ry="26" fill="#0c0e12" opacity=".08"/>
+  <rect y="700" width="1200" height="60" fill="#d8b26a" opacity=".1"/>
+
+<defs>
+  <radialGradient id="bulbGlow" cx="50%" cy="50%" r="50%">
+    <stop offset="0" stop-color="#ffd9a0" stop-opacity=".85"/>
+    <stop offset="55%" stop-color="#e8b46a" stop-opacity=".28"/>
+    <stop offset="100%" stop-color="#e8b46a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="litStall" cx="50%" cy="34%" r="66%">
+    <stop offset="0" stop-color="#ffcf94" stop-opacity=".40"/>
+    <stop offset="55%" stop-color="#e8a75c" stop-opacity=".15"/>
+    <stop offset="100%" stop-color="#c8823c" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<g>
+  <ellipse cx="220" cy="378" rx="132" ry="104" fill="url(#litStall)"/>
+  <ellipse cx="576" cy="378" rx="132" ry="104" fill="url(#litStall)"/>
+  <ellipse cx="932" cy="378" rx="132" ry="104" fill="url(#litStall)"/>
+</g>
+<path d="M40 132q280 92 560 44t560 62" fill="none" stroke="#8b8272" stroke-width="3" opacity=".7"/>
+<circle cx="40" cy="132" r="46" fill="url(#bulbGlow)"/><circle cx="40" cy="144" r="7" fill="#ffe3b4"/>
+<circle cx="110" cy="151" r="46" fill="url(#bulbGlow)"/><circle cx="110" cy="163" r="7" fill="#ffe3b4"/>
+<circle cx="180" cy="169" r="46" fill="url(#bulbGlow)"/><circle cx="180" cy="181" r="7" fill="#ffe3b4"/>
+<circle cx="250" cy="185" r="46" fill="url(#bulbGlow)"/><circle cx="250" cy="197" r="7" fill="#ffe3b4"/>
+<circle cx="320" cy="200" r="46" fill="url(#bulbGlow)"/><circle cx="320" cy="212" r="7" fill="#ffe3b4"/>
+<circle cx="390" cy="212" r="46" fill="url(#bulbGlow)"/><circle cx="390" cy="224" r="7" fill="#ffe3b4"/>
+<circle cx="460" cy="221" r="46" fill="url(#bulbGlow)"/><circle cx="460" cy="233" r="7" fill="#ffe3b4"/>
+<circle cx="530" cy="226" r="46" fill="url(#bulbGlow)"/><circle cx="530" cy="238" r="7" fill="#ffe3b4"/>
+<circle cx="600" cy="228" r="46" fill="url(#bulbGlow)"/><circle cx="600" cy="240" r="7" fill="#ffe3b4"/>
+<circle cx="670" cy="226" r="46" fill="url(#bulbGlow)"/><circle cx="670" cy="238" r="7" fill="#ffe3b4"/>
+<circle cx="740" cy="221" r="46" fill="url(#bulbGlow)"/><circle cx="740" cy="233" r="7" fill="#ffe3b4"/>
+<circle cx="810" cy="212" r="46" fill="url(#bulbGlow)"/><circle cx="810" cy="224" r="7" fill="#ffe3b4"/>
+<circle cx="880" cy="200" r="46" fill="url(#bulbGlow)"/><circle cx="880" cy="212" r="7" fill="#ffe3b4"/>
+<circle cx="950" cy="185" r="46" fill="url(#bulbGlow)"/><circle cx="950" cy="197" r="7" fill="#ffe3b4"/>
+<circle cx="1020" cy="169" r="46" fill="url(#bulbGlow)"/><circle cx="1020" cy="181" r="7" fill="#ffe3b4"/>
+<circle cx="1090" cy="151" r="46" fill="url(#bulbGlow)"/><circle cx="1090" cy="163" r="7" fill="#ffe3b4"/>
+<circle cx="1160" cy="132" r="46" fill="url(#bulbGlow)"/><circle cx="1160" cy="144" r="7" fill="#ffe3b4"/>
+<rect width="1200" height="760" fill="#0d1014" opacity=".16"/>
+</svg>
