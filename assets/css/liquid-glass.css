@@ -1,0 +1,1214 @@
+/* ============================================================================
+   ICHHAPUR Market — Liquid Glass
+   ----------------------------------------------------------------------------
+   The site's one translucent-material layer: an iOS-style frosted surface with
+   a lit edge, real depth and, where there is something behind it to bend, an
+   actual refraction.
+
+   It is a separate stylesheet because it has to load last on every page and be
+   able to say, in one place, which surfaces are glass. It never invents a new
+   colour: the fills, edges and shadows are the warm daylight tokens from
+   site-chrome.css — the cream ground, the charcoal ink, the market's own amber
+   — so the material reads as this site's glass rather than a generic one.
+
+   How it works, and how it falls back
+   ------------------------------------
+   `liquid-glass.js` runs in the head, before the first paint, and writes one
+   value on <html>:
+
+     data-glass="refract"  the browser bends the backdrop through the surface
+                           (backdrop-filter accepts an SVG filter reference, and
+                           the filter is feTurbulence + feDisplacementMap — the
+                           same refraction technique the reference project uses,
+                           rendered by the browser's compositor instead of WebGL)
+     data-glass="frost"    blur and saturation only, no bending
+     data-glass="solid"    nothing: an opaque warm plate with the same edge and
+                           depth. Used when backdrop-filter is missing, when the
+                           visitor asks for less transparency, and when the
+                           Liquid Glass switch in the header is turned off.
+
+   With JavaScript switched off there is no data-glass attribute at all. The
+   rules below are written so that the unmarked state is the frost tier — the
+   site looks finished, not broken, and only loses the refraction.
+
+   The refraction is deliberately confined to a band around the edge of a
+   surface, the way iOS does it, and only on surfaces that actually float over
+   other content (the masthead, the back bar, the mobile drawer, the store
+   sheet's backdrop, the cards that sit on an illustration, the toast). A card
+   in the middle of the cream page has nothing behind it to bend, so it gets
+   frost, edge light and depth instead — claiming a lens there would be a lie.
+   ========================================================================= */
+
+/* ------------------------------------------------------------- 1. tokens */
+:root {
+  --lg-cream: 247, 243, 239;
+  --lg-white: 255, 251, 245;
+  --lg-charcoal: 30, 27, 24;
+  --lg-gold: 232, 167, 92;
+  --lg-clay: 138, 74, 34;
+
+  /* fills — never more translucent than the text on top of them needs.
+     A plate you read from is mostly opaque: at .68 the cream page showed
+     through warmly enough to pull a small amber label from 4.66:1 to 4.42:1,
+     which is the difference between legible and not. The glass in these
+     surfaces is their lit edge, their depth and their frost — not a see-through. */
+  /* ------------------------------------------------------------ 1b. strength */
+  /* One number. liquid-glass.js writes it onto the root from the Glass Effect
+     slider, and every material value below is a function of it: 1 is the glass
+     the site was drawn and measured at, 0 is the plain page. Deriving them here
+     rather than re-declaring them per tier is what makes the slider honest — a
+     rule that set `--lg-blur` to a literal in one place and read it in another is
+     a control that moves a label and changes nothing.
+     The translucency of a fill runs the other way from its frost: at strength 0
+     a panel closes back to opaque, which is the `solid` tier's own value, so the
+     bottom of the slider and the switch that turns the effect off land on the
+     same plate. */
+  --lg-s: 1;
+
+  --lg-panel: rgba(255, 253, 250, calc(1 - .16 * var(--lg-s)));
+  --lg-panel-strong: rgba(252, 249, 245, calc(1 - .2 * var(--lg-s)));
+  --lg-wash: rgba(var(--lg-cream), calc(1 - .42 * var(--lg-s)));
+  --lg-warm: rgba(230, 221, 211, calc(1 - .45 * var(--lg-s)));
+  --lg-dark: rgba(var(--lg-charcoal), calc(1 - .1 * var(--lg-s)));
+  --lg-gold-glass: rgba(var(--lg-gold), calc(1 - .66 * var(--lg-s)));
+  /* the toast reads over the admin list, so it is the dark kind of glass */
+  --lg-toast: rgba(var(--lg-charcoal), calc(1 - .16 * var(--lg-s)));
+  --lg-toast-bad: rgba(156, 42, 20, calc(1 - .16 * var(--lg-s)));
+  /* the sheet's sticky head floats over the card's own scroll */
+  --lg-sheet-head: rgba(255, 252, 247, calc(1 - .22 * var(--lg-s)));
+  /* the skip button on the opening signboard: light laid over the charcoal overlay */
+  --lg-ghost-dark: rgba(253, 248, 238, calc(.34 - .2 * var(--lg-s)));
+  /* The two plates the site lays over its own market photography. Both are
+     charcoal with light type written into it; the number is how much of the
+     picture is allowed to come through. With no frost to frost, that see-through
+     is the only glass left, so the tiers below finish the mix by hand. */
+  --lg-shot-note: rgba(27, 26, 24, calc(1 - .18 * var(--lg-s)));
+  --lg-hero-chip: rgba(27, 26, 24, calc(1 - .45 * var(--lg-s)));
+  --lg-statcard: rgba(255, 255, 255, calc(1 - .28 * var(--lg-s)));
+
+  /* Two switches share one track. Both fills are tokens rather than literals
+     because the "on" state used to be written as `.lg-switch input:checked +
+     .lg-switch__track` — three classes and an element, specificity (0,3,1) —
+     which no tier rule could beat without going equally ugly. A token is read
+     once, from the element's own rule, so turning the glass off flips a value
+     instead of starting a selector fight. */
+  --lg-track: rgba(216, 198, 173, calc(1 - .45 * var(--lg-s)));
+  --lg-track-on: rgba(47, 107, 80, calc(1 - .38 * var(--lg-s)));
+
+  /* The chrome — the bar, the back bar, the drawer strip, the round discs and the
+     list plate. These five used to be literals written at the point of use, which
+     meant the slider could move the frost under them and leave the see-through
+     alone; that is exactly the "changes only the label" failure the whole layer is
+     arranged to avoid. Derived to the same contract: at 1 the alpha the surface
+     was measured at, at 0 an opaque plate, so the bottom of the track and the off
+     switch land on the same colour. */
+  --lg-frame: rgba(var(--lg-cream), calc(1 - .34 * var(--lg-s)));
+  --lg-frame-stuck: rgba(var(--lg-cream), calc(1 - .18 * var(--lg-s)));
+  --lg-frame-bar: rgba(var(--lg-cream), calc(1 - .32 * var(--lg-s)));
+  --lg-frame-nav: rgba(var(--lg-cream), calc(1 - .14 * var(--lg-s)));
+  --lg-disc: rgba(255, 255, 255, calc(1 - .56 * var(--lg-s)));
+  --lg-plate: rgba(255, 253, 250, calc(1 - .03 * var(--lg-s)));
+
+  /* the lit edge: light arrives from the top-left, so the top rim is bright */
+  --lg-hair: rgba(23, 24, 26, .12);
+  --lg-hair-strong: rgba(23, 24, 26, .26);
+  --lg-edge: rgba(var(--lg-white), .85);
+  --lg-rim-dark: rgba(240, 232, 222, .3);
+
+  /* frost strength per tier — all three are the slider's, so the bottom of the
+     track really is the same page with the effect turned off */
+  --lg-blur: calc(12px * var(--lg-s));
+  --lg-blur-chrome: calc(18px * var(--lg-s));
+  --lg-sat: calc(100% + 60% * var(--lg-s));
+
+  /* the refraction band */
+  --lg-band: calc(8px + 6px * var(--lg-s));
+  --lg-band-blur: calc(6px * var(--lg-s));
+
+  /* depth */
+  --lg-float: 0 16px 30px -18px rgba(60, 42, 26, .38), 0 2px 6px rgba(60, 42, 26, .07);
+  --lg-float-lg: 0 30px 58px -26px rgba(60, 42, 26, .48), 0 4px 14px rgba(60, 42, 26, .09);
+  --lg-lift: inset 0 1px 0 rgba(var(--lg-white), .8), inset 0 -1px 0 rgba(var(--lg-clay), .1), inset 0 0 0 1px rgba(var(--lg-white), .3);
+  --lg-lift-dark: inset 0 1px 0 rgba(240, 232, 222, .22), inset 0 -1px 0 rgba(0, 0, 0, .3), inset 0 0 0 1px rgba(240, 232, 222, .1);
+
+  /* the light that travels across a surface when you touch it */
+  --lg-sheen: linear-gradient(104deg,
+    rgba(255, 255, 255, 0) 36%, rgba(var(--lg-white), .5) 50%, rgba(255, 255, 255, 0) 64%);
+  --lg-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+
+  --lg-ease: cubic-bezier(.22, .75, .28, 1);
+  --lg-glide: cubic-bezier(.32, .9, .24, 1);
+  --lg-t: .34s;
+
+  /* the moving bead. Declared here so a container rule can beat it —
+     a value set on the bead itself could never be overridden from above. */
+  --lg-thumb-fill: linear-gradient(180deg,
+    rgba(255, 255, 255, .96), rgba(250, 244, 236, .82) 48%, rgba(238, 228, 216, .9));
+}
+
+/* Two tiers, chosen by JS from how much of the effect this browser can do. */
+html[data-glass="solid"],
+html[data-glass="off"] {
+  --lg-blur: 0px;
+  --lg-blur-chrome: 0px;
+  --lg-band-blur: 0px;
+  /* The two panel fills. They are here rather than as another entry in the
+     long `html[data-glass="solid"] :is(…)` list because that list cannot reach
+     `off`: the editor sheet was still .84-alpha with the switch flipped off, and
+     a hidden panel is exactly the thing a resting-page sweep never sees. */
+  --lg-panel: #fffdfb;
+  --lg-panel-strong: #fffdfa;
+  --lg-toast: #1e1b18;
+  --lg-toast-bad: #9c2a14;
+  --lg-sheet-head: #fffcf7;
+  --lg-track: #d8c6ad;
+  --lg-track-on: var(--palm, #2f6b50);
+  --lg-ghost-dark: #3d3a36;
+  --lg-shot-note: #1b1a18;
+  --lg-hero-chip: #1b1a18;
+}
+
+/* ---------------------------------------------------- 2. the pane material */
+/* Panels that hold content. Behind them is the cream page and two soft radial
+   gradients — a backdrop-filter over a smooth gradient is invisible, and it
+   still costs the compositor a re-blur of that region on every scrolled frame,
+   which on a directory grid is a dozen of them at once. So a content card gets
+   the parts of glass that are actually visible where it sits: a fill that lets
+   the page's warmth through, a lit edge, an inner rim highlight and a shadow
+   that floats it off the cream. The blur is spent in 2b, on the surfaces that
+   genuinely have a picture or scrolling content behind them. */
+:is(.card, .state, .coords, .card-form, .form__result, .map-links a, .sheet__close,
+    .notice, .listwrap, .editor, .export, .src, .srcrow, .quote,
+    .tcard__link, .lcard a) {
+  background: var(--lg-panel);
+  box-shadow: var(--lg-float), var(--lg-lift);
+}
+
+/* The wide panels read as a thicker sheet. */
+:is(.card-form, .editor, .export, .listwrap, .notice) {
+  box-shadow: var(--lg-float-lg), var(--lg-lift);
+}
+
+/* The admin list is the one place a panel is read at 12px. Its category labels
+   are `--cat` ink sitting on an 8.5% tint of that same ink, so the plate under
+   them is doing the last few points of the ratio — at .84 the pair measured
+   4.40:1 against AA's 4.5. The glass here stays in its edge, its depth and its
+   frost; the see-through is what costs the legibility, so it is what comes out. */
+.listwrap { background: var(--lg-plate); }
+
+/* ------------------------------------------------- 2b. surfaces that overlap */
+/* These float over something that can actually be seen through them: an image,
+   a dimmed page, content scrolling underneath. Here the frost is real, so the
+   blur is paid for and shows. */
+:is(.floatcard, .shot__note, .hero__chip, .toast, .intro__skip) {
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+}
+/* The toast is the dark kind of glass — the HUD pill iOS drops over a sheet.
+   It arrived with a fully opaque ink plate, which meant the blur above was being
+   paid for and thrown away: there is nothing to frost behind a solid fill. So the
+   plate lets a little of the list through and takes an ivory rim instead of a
+   white one, because light on a dark surface reads warm. The white writing is the
+   site's own (`admin.css:375-382`), and at .84 it clears AA with room to spare
+   over both backdrops the pill can land on — the cream panel and the dark footer
+   — which is what the toast passes in tools/tier-check.mjs measure, in all four
+   tiers, at 1200 and at 375. */
+.toast {
+  background: var(--lg-toast);
+  border-color: rgba(240, 232, 222, .24);
+  box-shadow: var(--lg-float), var(--lg-lift-dark);
+}
+.toast.is-bad { background: var(--lg-toast-bad); border-color: rgba(240, 232, 222, .3); }
+/* The skip button on the opening signboard is the site's only light-on-dark
+   ghost: fourteen per cent of ivory over the charcoal overlay. That reads as a
+   surface because the frost behind it is real, and in solid and off the frost is
+   zero — so the fill becomes the mixed colour it was standing in for, and the
+   control stops depending on a backdrop it can no longer bend. */
+.intro__skip { background: var(--lg-ghost-dark); }
+/* The figure caption and the hero's location chip are the site's two plates over
+   photography. They keep their fill in every tier; what changes is whether the
+   picture is allowed through it. */
+.shot__note { background: var(--lg-shot-note); }
+.hero__chip { background: var(--lg-hero-chip); }
+/* The three hero counters are the biggest pane of glass on the site — light laid
+   over the market picture, inverted for the light theme. They arrived as fixed
+   literals in landing.css, which left them the one prominent surface the slider
+   could not reach: at 0% everything else closed back into a plate and these three
+   stayed 72% white with an 18px frost. Same contract as the rest of the layer —
+   at 1 the alpha, frost and edge the cards were measured and contrast-checked at,
+   at 0 an opaque panel with a dimmer rim. */
+.statcard {
+  background: var(--lg-statcard);
+  -webkit-backdrop-filter: blur(calc(18px * var(--lg-s))) saturate(calc(120% + 60% * var(--lg-s)));
+  backdrop-filter: blur(calc(18px * var(--lg-s))) saturate(calc(120% + 60% * var(--lg-s)));
+  border-color: rgba(255, 255, 255, calc(.35 + .35 * var(--lg-s)));
+}
+/* The sheet's body is where a person reads, so it stays a solid plate the way
+   an iOS sheet does; only its sticky head is glass, over the card's own scroll. */
+.sheet__inner {
+  background: var(--paper, #fff);
+  box-shadow: var(--lg-float-lg), var(--lg-lift);
+}
+.sheet__head {
+  background: var(--lg-sheet-head);
+  -webkit-backdrop-filter: blur(calc(14px * var(--lg-s))) saturate(160%);
+  backdrop-filter: blur(calc(14px * var(--lg-s))) saturate(160%);
+  border-bottom-color: var(--lg-hair);
+}
+
+/* Washes that used to be a tint: same hue, now a thin pane of it. */
+:is(.guide-note, .callout, .chip, .badge, .contact__status, .hero__note, .lcard__flag,
+    .tag, .tag--cat, .photo__prev, .hero__photo__img) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+
+/* A picture is a surface too — the market imagery the site is built on. */
+.card__thumb, .state__art, .shot img, .lcard__img, .pageshot img, .rowimg {
+  border-color: var(--lg-hair);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5), 0 8px 18px -14px rgba(60, 42, 26, .5);
+}
+
+/* ------------------------------------------------- 3. the chrome (floating) */
+.masthead {
+  background: var(--lg-frame);
+  -webkit-backdrop-filter: blur(var(--lg-blur-chrome)) saturate(175%) brightness(1.03);
+  backdrop-filter: blur(var(--lg-blur-chrome)) saturate(175%) brightness(1.03);
+}
+.masthead.is-stuck { background: var(--lg-frame-stuck); }
+.masthead__tail .pill--solid { background: var(--lg-panel-strong); }
+.masthead__tail .pill--solid:hover { background: rgba(255, 255, 255, .95); }
+
+.backbar {
+  background: var(--lg-frame-bar);
+  -webkit-backdrop-filter: blur(var(--lg-blur-chrome)) saturate(170%);
+  backdrop-filter: blur(var(--lg-blur-chrome)) saturate(170%);
+}
+
+.mastnav {
+  background: var(--lg-frame-nav);
+  -webkit-backdrop-filter: blur(calc(22px * var(--lg-s))) saturate(180%);
+  backdrop-filter: blur(calc(22px * var(--lg-s))) saturate(180%);
+}
+
+/* The three discs in the masthead sit on the bar that is already frosted, so a
+   second blur there is real — content slides underneath them. The round buttons
+   in the source carousel and the admin table do not, so they get the same fill
+   and edge without paying for a blur that would show nothing. */
+.round, .burger, .backbar__btn {
+  background: var(--lg-disc);
+  border-color: var(--lg-hair);
+  box-shadow: inset 0 1px 0 rgba(var(--lg-white), .8), 0 2px 6px -2px rgba(60, 42, 26, .22);
+  -webkit-backdrop-filter: blur(calc(9px * var(--lg-s))) saturate(160%);
+  backdrop-filter: blur(calc(9px * var(--lg-s))) saturate(160%);
+}
+.quoter__nav, .iconbtn {
+  background: var(--lg-disc);
+  border-color: var(--lg-hair);
+  box-shadow: inset 0 1px 0 rgba(var(--lg-white), .8), 0 2px 6px -2px rgba(60, 42, 26, .22);
+}
+.round:hover, .backbar__btn:hover, .quoter__nav:hover, .iconbtn:hover,
+.btn--quiet:hover, .btn--outline:hover {
+  background: rgba(255, 255, 255, .78);
+}
+
+.pill--ghost, .btn--quiet, .btn--outline, .btn {
+  border-color: var(--lg-hair);
+}
+.pill--ghost, .btn--quiet {
+  background: rgba(255, 255, 255, .5);
+  box-shadow: inset 0 1px 0 rgba(var(--lg-white), .75), 0 2px 8px -3px rgba(60, 42, 26, .24);
+}
+.btn--primary, .btn--dark, .pill--solid {
+  box-shadow: 0 12px 24px -14px rgba(23, 24, 26, .5), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+
+/* The dark plate of the guide's footer: the market at night, as a heavy glass. */
+.site-footer {
+  background: var(--lg-dark);
+  -webkit-backdrop-filter: blur(calc(20px * var(--lg-s))) saturate(140%);
+  backdrop-filter: blur(calc(20px * var(--lg-s))) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(240, 232, 222, .16);
+}
+.dk-foot {
+  background: rgba(230, 221, 211, .68);
+  -webkit-backdrop-filter: blur(calc(14px * var(--lg-s))) saturate(150%);
+  backdrop-filter: blur(calc(14px * var(--lg-s))) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(var(--lg-white), .6);
+}
+.section--about { background-color: rgba(36, 33, 30, .96); }
+/* The about panel sits on that night section, so its glass is the heavy kind: a
+   warm veil over charcoal, lit along the top with ivory rather than white. It is
+   deliberately not given the light panel material — the text on it is ivory, and
+   an ivory plate would bury it. */
+.about__card {
+  background: rgba(18, 15, 12, .34);
+  border-color: rgba(253, 248, 238, .26);
+  box-shadow: 0 20px 38px -24px rgba(0, 0, 0, .66), var(--lg-lift-dark);
+}
+
+/* The store sheet: the panel lifts off a backdrop that now also bends. */
+.sheet::backdrop {
+  background: rgba(26, 17, 10, .6);
+  -webkit-backdrop-filter: blur(calc(6px * var(--lg-s))) saturate(120%);
+  backdrop-filter: blur(calc(6px * var(--lg-s))) saturate(120%);
+}
+html[data-glass="refract"] .sheet::backdrop {
+  -webkit-backdrop-filter: url(#lg-lens-wide) blur(calc(9px * var(--lg-s))) saturate(130%);
+  backdrop-filter: url(#lg-lens-wide) blur(calc(9px * var(--lg-s))) saturate(130%);
+}
+.sheet__close { border-color: var(--lg-hair); }
+
+/* --------------------------------------------------- 4. fields and filters */
+:is(input[type="search"], input[type="text"], input[type="tel"], input[type="url"],
+    input[type="date"], select, textarea) {
+  background: rgba(255, 255, 255, .62);
+  border-color: var(--lg-hair);
+  box-shadow: inset 0 1px 2px rgba(60, 42, 26, .07), inset 0 -1px 0 rgba(var(--lg-white), .6);
+  -webkit-backdrop-filter: blur(calc(6px * var(--lg-s))) saturate(140%);
+  backdrop-filter: blur(calc(6px * var(--lg-s))) saturate(140%);
+}
+:is(input, select, textarea):focus {
+  background: rgba(255, 255, 255, .94);
+  box-shadow: inset 0 1px 2px rgba(60, 42, 26, .05), 0 0 0 3px rgba(168, 68, 42, .16);
+}
+.field__control--select::after { opacity: .8; }
+
+/* The category row is a segmented control: a glass plate with one indicator
+   that slides underneath the chips. */
+.chips__row, .radio-row {
+  position: relative;
+  isolation: isolate;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--lg-wash);
+  border: 1px solid var(--lg-hair);
+  box-shadow: inset 0 1px 2px rgba(60, 42, 26, .1), inset 0 -1px 0 rgba(var(--lg-white), .6);
+}
+.radio-row { padding: 5px; border-radius: 999px; }
+
+.filter-chip, .radio {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border-color: transparent;
+}
+.filter-chip { color: #4a3c2c; }
+.radio { color: var(--ink-soft, #45413c); background: transparent; border: 1.5px solid transparent; }
+.radio input { accent-color: var(--clay, #a8442a); }
+.filter-chip:hover, .radio:hover { color: var(--ink, #17181a); border-color: transparent; }
+
+/* Selected: the indicator behind carries the darkness, so the chip only has to
+   lift its own text. The chip's own background is kept too — the audit measures
+   a text box against the styles it can walk, and a sibling element is invisible
+   to that walk. */
+.filter-chip[aria-pressed="true"],
+.radio:has(input:checked) {
+  background: rgba(36, 33, 30, .88);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 8px -3px rgba(23, 24, 26, .5);
+}
+.filter-chip .n { opacity: .75; }
+
+.lg-seg {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--lg-warm);
+  border: 1px solid var(--lg-hair);
+  box-shadow: inset 0 1px 2px rgba(60, 42, 26, .1), var(--lg-lift);
+}
+/* The bar is only a last resort for a viewport this control cannot fit; when it
+   is used the script scrolls the chosen option back into view. */
+.lg-seg::-webkit-scrollbar { display: none; }
+.lg-seg__opt {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: .3rem .8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-display, inherit);
+  font-size: .86rem;
+  font-weight: 600;
+  color: #4a3c2c;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .2s var(--lg-ease);
+}
+.lg-seg__opt:hover { color: #17181a; }
+.lg-seg__opt[aria-checked="true"] { color: var(--ink, #17181a); font-weight: 700; }
+
+/* The indicator itself. Positioned in px by liquid-glass.js, animated here.
+   The glide is a transition on `transform`; the squash — the way a liquid bead
+   stretches as it is pulled along — is a one-shot keyframe on the independent
+   `scale` property. That separation is the whole point: written as a
+   `transform: … scaleX(1.045)` under `.is-moving`, dropping the class part-way
+   started a *second* transition back to scale 1, so the bead kept changing shape
+   for another 340ms after it had arrived and sat visibly off-centre while it did.
+   It is drawn 3px larger than the option it carries, so a lit rim of the bead
+   shows around whatever that option paints itself. In a segmented control the
+   bead is the whole selection — the option stays transparent and the label is
+   dark on light in both states, so nothing depends on a node the contrast walk
+   cannot see. */
+.lg-thumb {
+  position: absolute;
+  z-index: 0;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  background: var(--lg-thumb-fill);
+  border: 1px solid rgba(255, 250, 240, .85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    inset 0 -1px 0 rgba(138, 74, 34, .2),
+    0 4px 12px -4px rgba(60, 42, 26, .45);
+  transform: var(--lg-to);
+  scale: 1 1;
+  transition: transform var(--lg-t) var(--lg-glide), width var(--lg-t) var(--lg-ease), opacity var(--lg-t) linear;
+  opacity: 0;
+  pointer-events: none;
+}
+/* On the two rows whose selection is a dark plate, the bead is the gold light
+   that leaks out around that plate — and that rim is the part that moves. */
+.chips__row, .radio-row {
+  --lg-thumb-fill: linear-gradient(180deg,
+    rgba(255, 238, 210, .95) 0, rgba(232, 167, 92, .74) 55%, rgba(196, 124, 56, .72) 100%);
+}
+.is-lg-live .lg-thumb { opacity: 1; }
+@keyframes lg-squash { 0% { scale: 1 1 } 38% { scale: 1.045 1 } 100% { scale: 1 1 } }
+.lg-thumb.is-moving {
+  animation: lg-squash calc(var(--lg-t) * 1.35) var(--lg-glide) 1;
+  transition-duration: calc(var(--lg-t) * 1.35);
+}
+/* The native select behind a segmented control. It is not merely hidden: the
+   segmented group is its replacement for a screen reader too, so leaving the
+   select in the tree would announce the same choice twice. `display: none` keeps
+   its value readable by the admin script and keeps the page honest with no
+   JavaScript — without the script there is no wrap, and the select is visible. */
+.lg-seg-wrap { position: relative; display: block; }
+.lg-seg-wrap select { display: none; }
+.field--stat.is-ok .lg-seg__opt[aria-checked="true"] { color: #1d4d37; }
+.field--stat.is-warn .lg-seg__opt[aria-checked="true"] { color: #7a4d00; }
+/* Three long labels side by side need more room than a phone gives them, so the
+   options get closer together rather than pushing the page wide. */
+@media (max-width: 560px) {
+  .lg-seg__opt { padding: .28rem .6rem; font-size: .8rem; }
+}
+
+/* The native dot on a chosen radio sits on a dark plate, and clay on charcoal is
+   under 3:1; the market's gold is the one that clears it. */
+.radio:has(input:checked) input { accent-color: #f0c189; }
+
+/* -------------------------------------- 5. the switch: iOS, glass on a track */
+.switch__track, .lg-switch__track {
+  background: var(--lg-track);
+  border: 1px solid var(--lg-hair);
+  box-shadow: inset 0 1px 3px rgba(60, 42, 26, .22), inset 0 -1px 0 rgba(var(--lg-white), .4);
+  -webkit-backdrop-filter: blur(calc(6px * var(--lg-s))) saturate(160%);
+  backdrop-filter: blur(calc(6px * var(--lg-s))) saturate(160%);
+}
+.switch__track { width: 51px; height: 31px; }
+.switch__knob, .lg-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 5px rgba(23, 24, 26, .35), 0 0 0 .5px rgba(60, 42, 26, .12);
+  transition: transform var(--lg-t) var(--lg-glide);
+}
+.switch input:checked + .switch__track,
+.lg-switch input:checked + .lg-switch__track {
+  background: var(--lg-track-on);
+  border-color: rgba(255, 250, 240, .5);
+}
+.switch input:checked + .switch__track .switch__knob { transform: translateX(20px); }
+.switch input:focus-visible + .switch__track,
+.lg-switch input:focus-visible + .lg-switch__track {
+  outline: 3px solid var(--indigo, #24211e);
+  outline-offset: 2px;
+}
+
+/* The header's own switch — Liquid Glass on and off, and how strong it is. */
+.mastnav__opt { display: flex; align-items: center; gap: .35rem; }
+.lg-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: .3rem;
+  padding: .25rem .55rem .25rem .35rem;
+  border-radius: 999px;
+  color: #45413c;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lg-switch:hover { color: #17181a; }
+.lg-switch__track {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  transition: background-color .22s var(--lg-ease), border-color .22s var(--lg-ease);
+}
+.lg-switch__knob { top: 2px; left: 2px; width: 16px; height: 16px; }
+.lg-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.lg-switch input:checked + .lg-switch__track .lg-switch__knob { transform: translateX(16px); }
+/* the header is light, so an indigo focus ring is right; the plate keeps it
+   visible wherever the drawer has made the bar dark */
+.lg-switch input:focus-visible + .lg-switch__track { outline-color: #24211e; }
+html[data-glass="off"] .lg-switch__text { opacity: .6; }
+
+/* The header's strength slider. Same pane material as the switch's track, the
+   same knob gradient, and the filled part of the track is `--lg-level-p`, which
+   liquid-glass.js writes from the same number that writes `--lg-s`. So the
+   control and the effect cannot disagree, and what you drag is a bar of glass
+   rather than a line with a circle on it. */
+.lg-level {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-left: .2rem;
+  white-space: nowrap;
+}
+.lg-level__label {
+  color: #45413c;
+  font-size: .78rem;
+  font-weight: 600;
+}
+/* The row goes quiet with the switch, since a level you cannot feel is the one
+   control that should look unavailable. */
+html[data-glass="off"] .lg-level { opacity: .5; }
+.lg-level__range {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: none;
+  width: 104px;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lg-level__range:disabled { cursor: default; }
+.lg-level__range::-webkit-slider-runnable-track {
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    var(--lg-track-on) 0 var(--lg-level-p, 100%), var(--lg-track) var(--lg-level-p, 100%) 100%);
+  border: 1px solid var(--lg-hair);
+  box-shadow: inset 0 1px 2px rgba(60, 42, 26, .14), inset 0 1px 0 rgba(var(--lg-white), .5);
+}
+.lg-level__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--lg-thumb-fill);
+  border: 1px solid var(--lg-hair-strong);
+  box-shadow: 0 2px 6px -1px rgba(60, 42, 26, .4), inset 0 1px 0 rgba(255, 255, 255, .9);
+  transition: transform .16s var(--lg-ease);
+}
+.lg-level__range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.lg-level__range::-moz-range-track {
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    var(--lg-track-on) 0 var(--lg-level-p, 100%), var(--lg-track) var(--lg-level-p, 100%) 100%);
+  border: 1px solid var(--lg-hair);
+}
+.lg-level__range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--lg-thumb-fill);
+  border: 1px solid var(--lg-hair-strong);
+  box-shadow: 0 2px 6px -1px rgba(60, 42, 26, .4);
+}
+.lg-level__range:focus { outline: none; }
+.lg-level__range:focus-visible::-webkit-slider-thumb { outline: 2px solid #24211e; outline-offset: 2px; }
+.lg-level__range:focus-visible::-moz-range-thumb { outline: 2px solid #24211e; outline-offset: 2px; }
+.lg-level__value {
+  min-width: 2.9rem;
+  color: #45413c;
+  font-size: .75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lg-level__reset {
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  border: 1px solid var(--lg-hair);
+  background: rgba(255, 255, 255, .5);
+  color: #45413c;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .2s var(--lg-ease), color .2s var(--lg-ease);
+}
+.lg-level__reset:hover { background: rgba(255, 255, 255, .85); color: #17181a; }
+.lg-level__reset:focus-visible { outline: 2px solid #24211e; outline-offset: 2px; }
+/* The header row is a single non-wrapping flex line, and the glass row has to
+   fit inside it. Measured on the live page at 1280: the gutters take 83, the
+   brand 136, the two gaps 32 and the tail 300 — which leaves 729px for the nav,
+   and the six page pills already want 481 of it. So the glass row gets 240px.
+   The words next to the controls are what pay for that, and they are the right
+   thing to pay with: each is clipped with the visually-hidden recipe rather than
+   `display:none`, so it still names its control for a screen reader.
+   Two other rules keep the arithmetic honest, and both were learned the hard
+   way from a measurement rather than from a guess:
+   - `.masthead__tail { flex: 0 0 auto }` because when the row was short, the
+     tail was the thing that shrank. The "Open the guide" pill went from 166px
+     across two lines to 82px across four, and the header grew from 71px to 112.
+   - `.mastnav { min-width: 0; flex-wrap: wrap }` because a flex item will not
+     give up width below its content otherwise, and the tail then ran 72px past
+     the viewport at 1280 — invisible, because `.dk-frame` clips the overflow
+     instead of scrolling it, which cuts the round search button off entirely.
+     A control nobody can reach is worse than a header one line taller. */
+.masthead__tail { flex: 0 0 auto; }
+@media (min-width: 900px) {
+  .mastnav { min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .mastnav__opt { min-width: 0; margin-left: auto; row-gap: .3rem; }
+  .lg-switch__text,
+  .lg-level__label {
+    position: absolute;
+    width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .lg-level__range { width: 80px; }
+  .lg-level__value { min-width: 2.4rem; }
+}
+/* …and above this the row has slack again, so the words come back and the track
+   stretches to the width the label gave up. The number is measured, not chosen:
+   with its words and a 104px track the glass row wants 442, the nav's six links
+   want 514 unbroken, the tail 300, the brand 136 and the gutters and gaps 115.
+   That is 1511 for a single line, so 1520 is where the words are honest to show.
+   Between 1318 and 1519 they are the part that can go and the row still sits on
+   one line at the header's original 71px. */
+@media (min-width: 1520px) {
+  .lg-switch__text,
+  .lg-level__label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .lg-level__range { width: 104px; }
+  .lg-level__value { min-width: 2.9rem; }
+}
+/* Under 900 the whole thing is a drawer, and the drawer has a column to itself:
+   the switch keeps its words, the slider takes the row it needs and its track
+   stretches instead of squeezing. */
+@media (max-width: 899px) {
+  .mastnav__opt { flex-wrap: wrap; row-gap: .55rem; }
+  .lg-level { flex: 1 1 13rem; }
+  .lg-level__range { flex: 1 1 auto; width: auto; min-width: 84px; }
+}
+/* Below 1318 the glass row drops to a second line inside the nav, which is the
+   honest outcome — but the six links then have to share the first line with the
+   *tail*, and from 900 to 1066px there is not enough width for the links even
+   alone. Tightening the six nav pills by .4rem of their side padding returns
+   77px, which is what they need to sit on one unbroken line there. This band
+   existed for 900–999 only, where the same squeeze first showed up as a
+   horizontal scrollbar; it reaches to 1066 now because the glass row pushed the
+   arithmetic that far. */
+@media (min-width: 900px) and (max-width: 1066px) {
+  .mastnav a { padding-left: .5rem; padding-right: .5rem; }
+  .lg-switch { margin-left: 0; }
+}
+
+@media (min-width: 900px) {
+  .mastnav { display: flex; align-items: center; gap: .2rem; }
+}
+
+/* ------------------------------------------ 5b. the tap floor: 44px on touch */
+/* Both design references this site is held to put the smallest tappable axis at
+   44 px, and the layer was drawn at a desktop size first. Measured on the live
+   pages: the switch label 134x30, its Reset 51x26, the slider 22 px tall, a
+   segmented option 30 — and the three masthead discs these controls now sit
+   beside were 38. The fix is the hit area, not the picture: a transparent
+   ::after over an element's own padding adds nothing a person can see, and each
+   of these rows already has the room (the masthead is 71 px tall). The free
+   pseudo-element is the one with no sheen, no lens band and no content. */
+.lg-switch, .lg-level__reset, .round, .burger, .iconbtn, .filter-chip, .btn--quiet, .lg-seg__opt {
+  position: relative;
+}
+/* The ring is written as the target itself and centred on the control, not as an
+   offset from its edge. That is not taste: every one of these is drawn with a 2px
+   rim, and an absolutely positioned box is measured from the *padding* edge, so a
+   ring written as `inset: -7px` on a 30px control came back 40 tall — 4 px short
+   of what it was sized for, on all eight of them. Centring a 44px box on the
+   control's own middle is the one formulation where the border width does not
+   matter. `left/right: 0` keeps each ring inside the control's own width, so a
+   wide button never reaches into its neighbour. */
+.lg-switch::after, .lg-level__reset::after, .iconbtn::after,
+.filter-chip::after, .btn--quiet::after, .lg-seg__opt::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+}
+/* The three masthead discs and the burger are the two cases short on *both* axes,
+   so their ring is a 44 px square about the same centre. The discs are 38 px with a
+   5.6 px gap, which means the rings overlap by .4 px. Widening that gap was tried
+   and cost more than it bought: the header row has no slack at 1318 px, and 4.8 px
+   on the tail wraps the glass controls onto a second line and grows the masthead
+   from 71 px to 112. The overlap is the cheaper defect — a quarter of a pixel of
+   invisible hit area, on the exact midpoint between two buttons a fingertip covers
+   whole, whereas a lost line is visible on every page. */
+.round::after, .burger::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 44px; height: 44px;
+  transform: translate(-50%, -50%);
+}
+/* …and the discs' row takes .4px of extra gap, which is what makes the two rings
+   meet instead of overlapping: at the base 5.6px a 44px ring on a 38px disc reaches
+   3px each way and the next disc's ring takes the last of it back, so the middle
+   button measured 43 wide. One fifth of a rem buys the pixel back and leaves the
+   header row's arithmetic alone — 1.6px on the tail, against the 4.8px that was
+   enough to wrap the whole control row onto a second line. */
+.roundrow { gap: .375rem; }
+/* The range is the one control whose own box is the right size to paint: it is
+   given the 44 px outright, and the track it draws inside is pushed down to stay
+   where it was. */
+.lg-level__range { height: 44px; }
+.lg-level__range::-webkit-slider-runnable-track { margin-top: 11px; }
+/* 30 + the bar's own 4px padding was 38. The bar goes to the 44 the pill beside
+   it already is, and the bead follows without being told: it is inset from the
+   bar (top/bottom 4px), not sized to the option. */
+.lg-seg { min-height: 44px; }
+.lg-seg__opt { min-height: 36px; }
+
+/* --------------------------------------------------- 6. light: edge and sheen */
+/* A hairline that is brighter at the top-left than at the bottom-right: the one
+   thing that makes a rounded rectangle read as glass rather than as translucent.
+   Only the surfaces that are genuinely static in the base site are marked up
+   here. Anything already placed — the sticky bars, the caption and the cards
+   that float on an illustration, the fixed toast, and the bead itself — is its
+   own containing block or is placed by the script, and must not be touched:
+   rewriting `sticky` or `absolute` to `relative` here drops the header out of
+   the scroll, flings a caption across the picture, and turns `.lg-thumb` into a
+   flex item in the row it is supposed to lie under — which shrinks it to its
+   own 1px borders and puts it in front of the labels instead of behind them. */
+:is(.card, .tcard__link, .lcard a, .quote, .srcrow, .notice, .editor, .export,
+    .coords, .state, .chip, .badge, .sheet__inner, .about__card,
+    .map-links a, .round, .pill, .filter-chip,
+    .switch__track, .lg-switch__track, .chips__row, .radio-row, .lg-seg) {
+  position: relative;
+}
+:is(.card, .tcard__link, .lcard a, .quote, .srcrow, .coords, .state,
+    .sheet__inner, .floatcard)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(155deg,
+    rgba(var(--lg-white), .55) 0, rgba(var(--lg-white), .12) 26%,
+    rgba(var(--lg-white), 0) 52%, rgba(var(--lg-clay), .1) 100%);
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  opacity: .95;
+}
+/* The same rim on the night plate, in ivory: light catching the top edge of a
+   dark sheet, not of a white one. */
+.about__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(155deg,
+    rgba(240, 232, 222, .34) 0, rgba(240, 232, 222, .08) 26%,
+    rgba(240, 232, 222, 0) 52%, rgba(0, 0, 0, .22) 100%);
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+}
+
+/* Grain kills the banding that a heavy blur paints into a gradient. */
+:is(.masthead, .backbar, .statcards, .chips__row, .card-form, .editor, .listwrap)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--lg-noise);
+  background-size: 120px 120px;
+  opacity: .045;
+  mix-blend-mode: overlay;
+}
+.card-form, .editor, .listwrap, .statcards { position: relative; }
+.masthead::after, .backbar::after, .card-form::after, .editor::after, .listwrap::after { z-index: 3; }
+
+/* The press answers with light travelling across the surface. A card is left out
+   of this: its `::before` is the trade bar down its left edge, and that says more
+   about the listing than a sheen ever would. */
+:is(.btn--quiet, .btn--outline, .pill--ghost, .round, .map-links a,
+    .tcard__link, .lcard a, .quote, .filter-chip):hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  background-image: var(--lg-sheen);
+  background-size: 260% 100%;
+  background-position: 0% 0;
+  opacity: .8;
+  transition: background-position .6s var(--lg-ease);
+}
+:is(.btn--quiet, .btn--outline, .pill--ghost, .round, .map-links a,
+    .tcard__link, .lcard a, .quote, .filter-chip)::before { content: none; }
+:is(.btn--quiet, .btn--outline, .pill--ghost, .round, .map-links a,
+    .tcard__link, .lcard a, .quote, .filter-chip):hover::before { background-position: 100% 0; }
+
+/* ---------------------------------------------- 7. the refraction band (lens) */
+/* The two filters that bend the backdrop live in an SVG that liquid-glass.js
+   appends to the body. It has to be in the document to be referenceable, so it
+   takes up no box at all. */
+.lg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Only here, and only when the browser can do it, does the backdrop actually
+   bend. The band is the outer `--lg-band` of the surface; the middle keeps the
+   clean frost, so nothing a person has to read is ever distorted. */
+.lens::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: var(--lg-band) solid transparent;
+  background: transparent;
+  -webkit-backdrop-filter: blur(var(--lg-band-blur)) saturate(200%) brightness(1.04);
+  backdrop-filter: blur(var(--lg-band-blur)) saturate(200%) brightness(1.04);
+  box-shadow: inset 0 0 0 1px rgba(var(--lg-white), .35);
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: backdrop-filter .3s var(--lg-ease);
+}
+.lens, .lg-rim-host { isolation: isolate; }
+/* The band is the first thing painted inside the surface, so everything that
+   belongs to the surface — its text, its pictures — sits over the top of it.
+   Zero specificity on purpose: this is a paint-order hint, not a layout rule.
+   Written as `.lens > *` it beat the site's own `position` on any child of a
+   glass surface — and on mobile that child is the menu panel, whose `fixed`
+   became `relative`, dropped back into the masthead's flex row, and shoved the
+   header's own buttons 161px off the right edge of the screen. */
+:where(.lens) > :where(*) { position: relative; }
+.lens--bar { --lg-band: 12px; }
+/* A chip or caption is only just bigger than the band itself, so it gets a
+   thinner one; otherwise the whole surface would be edge. */
+.lens--thin { --lg-band: 7px; }
+
+/* `.lg-rim` is the same band for a surface that already frosts its own backdrop
+   — a stat card. Sampling there too would blur a blur, and a twice-blurred
+   backdrop has nothing left to bend. So this band is drawn instead of sampled:
+   the light that catches the edge of the glass, not the glass itself. */
+.lg-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: var(--lg-band) solid transparent;
+  background: linear-gradient(160deg,
+    rgba(var(--lg-white), .55), rgba(var(--lg-white), .06) 45%, rgba(var(--lg-clay), .14));
+  box-shadow: inset 0 0 0 1px rgba(var(--lg-white), .4);
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.lg-rim-host > * { position: relative; }
+
+html[data-glass="refract"] .lens::before {
+  /* the plain frost first: a browser that parses `url()` in a backdrop filter
+     but cannot resolve the reference is left with this line, not with nothing */
+  -webkit-backdrop-filter: blur(var(--lg-band-blur)) saturate(200%) brightness(1.04);
+  backdrop-filter: blur(var(--lg-band-blur)) saturate(200%) brightness(1.04);
+  -webkit-backdrop-filter: url(#lg-lens) blur(var(--lg-band-blur)) saturate(200%) brightness(1.04);
+  backdrop-filter: url(#lg-lens) blur(var(--lg-band-blur)) saturate(200%) brightness(1.04);
+}
+html[data-glass="refract"] .lens--bar::before {
+  -webkit-backdrop-filter: blur(var(--lg-band-blur)) saturate(190%) brightness(1.03);
+  backdrop-filter: blur(var(--lg-band-blur)) saturate(190%) brightness(1.03);
+  -webkit-backdrop-filter: url(#lg-lens-wide) blur(var(--lg-band-blur)) saturate(190%) brightness(1.03);
+  backdrop-filter: url(#lg-lens-wide) blur(var(--lg-band-blur)) saturate(190%) brightness(1.03);
+}
+/* Solid mode: a band is pointless when nothing bends, so the sampled band
+   becomes a drawn one — the surface still reads as glass, just a flat kind. */
+html[data-glass="solid"] .lens::before {
+  background: linear-gradient(160deg,
+    rgba(var(--lg-white), .5), rgba(var(--lg-white), .05) 45%, rgba(var(--lg-clay), .12));
+  box-shadow: none;
+}
+html[data-glass="off"] .lens::before,
+html[data-glass="off"] .lg-rim { display: none; }
+
+/* At desktop width the navigation sits inside the masthead, which already has a
+   lens of its own — two lenses stacked would blur a blur. It comes back when the
+   drawer is what floats over the page.
+
+   `position: static` is not decoration here. site-nav.js writes the measured
+   masthead height into `.mastnav`'s inline `top` so the mobile drawer lands
+   under the bar, and its own comment notes that the value is ignored on desktop
+   because the desktop nav "is not positioned". Marking the nav as a glass
+   surface made `:where(.lens) > *` give it `position: relative`, which turned
+   that dormant inline value into a 71px downward shift — the row sailed out of
+   the header and hung over the page. Static puts the contract back. */
+@media (min-width: 900px) {
+  .mastnav {
+    position: static;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .mastnav.lens::before { display: none; }
+}
+
+/* ------------------------------------------------------------ 8. off / solid */
+/* Every translucent fill becomes a plate, so the layout, the edge and the depth
+   survive and only the see-through part goes. This is also what a visitor gets
+   when they turn the effect off, so it has to look deliberate. */
+html[data-glass="solid"] :is(input, select, textarea),
+html[data-glass="off"] :is(input, select, textarea) { background: var(--panel, #fff); }
+
+html[data-glass="solid"] :is(.card, .state, .coords, .card-form, .form__result, .map-links a,
+  .sheet__close, .notice, .listwrap, .editor, .export, .src, .srcrow, .quote, .about__card,
+  .tcard__link, .lcard a, .sheet__inner, .sheet__head, .floatcard, .chips__row, .radio-row, .lg-seg,
+  .masthead, .backbar, .mastnav, .dk-foot, .site-footer, .switch__track, .lg-switch__track,
+  .round, .burger, .backbar__btn, .quoter__nav, .iconbtn, .pill--ghost, .btn--quiet,
+  .statcard, .shot__note, .hero__chip, .toast) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-glass="solid"] :is(.masthead) { background: var(--frame-solid, #f7f3ef); }
+html[data-glass="solid"] .backbar { background: var(--frame-solid, #f7f3ef); }
+html[data-glass="solid"] .mastnav { background: var(--frame-solid, #f7f3ef); }
+html[data-glass="solid"] .site-footer { background: #24211e; }
+html[data-glass="solid"] .dk-foot { background: var(--band, #e6ddd3); }
+html[data-glass="solid"] :is(.card, .tcard__link, .lcard a, .quote, .srcrow, .notice,
+  .editor, .export, .state, .coords, .sheet__inner, .floatcard, .form__result,
+  .map-links a, .card-form, .listwrap) { background: var(--panel, #fff); }
+html[data-glass="solid"] :is(.chips__row, .radio-row, .lg-seg) { background: var(--band, #e6ddd3); }
+html[data-glass="solid"] .filter-chip[aria-pressed="true"],
+html[data-glass="solid"] .radio:has(input:checked) { background: var(--indigo, #24211e); }
+html[data-glass="solid"] :is(.round, .burger, .backbar__btn, .quoter__nav, .iconbtn, .pill--ghost, .btn--quiet) { background: var(--panel, #fff); }
+html[data-glass="solid"] :is(.statcard),
+html[data-glass="off"] :is(.statcard) { background: rgba(255, 255, 255, .95); }
+html[data-glass="solid"] .sheet::backdrop { background: rgba(26, 17, 10, .72); }
+
+html[data-glass="off"] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+/* Turning the glass off still leaves the sliding bead — it is how the control
+   shows which choice is yours — only as a flat plate rather than a material. */
+html[data-glass="off"] { --lg-thumb-fill: #e6ddd3; }
+html[data-glass="off"] :is(.chips__row, .radio-row) { --lg-thumb-fill: #e6ddd3; }
+html[data-glass="off"] .lg-thumb {
+  border-color: rgba(23, 24, 26, .26);
+  box-shadow: none;
+}
+html[data-glass="off"] :is(.masthead, .backbar, .mastnav) { background: var(--frame-solid, #f7f3ef); }
+html[data-glass="off"] :is(.chips__row, .radio-row, .lg-seg) { background: var(--band, #e6ddd3); }
+html[data-glass="off"] .filter-chip[aria-pressed="true"],
+html[data-glass="off"] .radio:has(input:checked) { background: var(--indigo, #24211e); }
+
+/* --------------------------------------------------- 9. system preferences */
+@media (prefers-reduced-motion: reduce) {
+  .lg-thumb,
+  .switch__knob, .lg-switch__knob,
+  .switch__track, .lg-switch__track,
+  .lens::before, .lg-rim,
+  :is(.card, .btn, .pill, .round, .map-links a, .tcard__link, .lcard a, .quote, .filter-chip, .iconbtn, .btn--quiet, .btn--outline) {
+    transition-duration: .001ms !important;
+  }
+  :is(.card, .btn--quiet, .btn--outline, .pill--ghost, .round, .map-links a,
+      .tcard__link, .lcard a, .quote, .filter-chip):hover::before {
+    background-position: 100% 0;
+  }
+  .lg-thumb.is-moving { transform: var(--lg-to); animation: none; scale: 1 1; }
+  html { scroll-behavior: auto; }
+}
+
+/* Less transparency: a heavy, warm plate with the same edges. */
+@media (prefers-reduced-transparency: reduce) {
+  html:not([data-glass="off"]) {
+    --lg-panel: #fffdfb;
+    --lg-panel-strong: #fffdfa;
+    --lg-wash: #efe9e2;
+    --lg-warm: #e6ddd3;
+    --lg-dark: #1e1b18;
+    --lg-gold-glass: rgba(232, 167, 92, .6);
+    --lg-toast: #1e1b18;
+    --lg-toast-bad: #9c2a14;
+    --lg-sheet-head: #fffcf7;
+    --lg-track: #d8c6ad;
+    --lg-track-on: var(--palm, #2f6b50);
+    --lg-ghost-dark: #3d3a36;
+    --lg-shot-note: #1b1a18;
+    --lg-hero-chip: #1b1a18;
+    --lg-blur: 0px;
+    --lg-blur-chrome: 0px;
+  }
+  html:not([data-glass="off"]) :is(.masthead, .backbar, .mastnav, .dk-foot, .site-footer,
+    .card, .state, .coords, .card-form, .form__result, .map-links a, .notice, .listwrap,
+    .editor, .export, .src, .srcrow, .quote, .about__card, .tcard__link, .lcard a,
+    .sheet__inner, .sheet__head, .floatcard, .chips__row, .radio-row, .lg-seg, .statcard, .shot__note,
+    .hero__chip, .toast, .switch__track, .lg-switch__track, .round, .burger,
+    .backbar__btn, .quoter__nav, .iconbtn, .pill--ghost, .btn--quiet,
+    input, select, textarea) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  html:not([data-glass="off"]) .lens::before,
+  html:not([data-glass="off"]) .lg-rim { display: none; }
+  html:not([data-glass="off"]) .filter-chip[aria-pressed="true"],
+  html:not([data-glass="off"]) .radio:has(input:checked) { background: #24211e; }
+}
+
+/* More contrast: harder edges, stronger fills, no blur. */
+@media (prefers-contrast: more) {
+  :root {
+    --lg-panel: rgba(255, 255, 255, .97);
+    --lg-panel-strong: rgba(255, 255, 255, .97);
+    --lg-wash: rgba(230, 221, 211, .96);
+    --lg-hair: rgba(23, 24, 26, .42);
+    --lg-gold-glass: rgba(232, 167, 92, .55);
+    --lg-toast: #1e1b18;
+    --lg-toast-bad: #9c2a14;
+    --lg-sheet-head: #fffcf7;
+    --lg-track: #d8c6ad;
+    --lg-track-on: var(--palm, #2f6b50);
+    --lg-ghost-dark: #3d3a36;
+    --lg-shot-note: #1b1a18;
+    --lg-hero-chip: #1b1a18;
+  }
+  .toast { border-color: rgba(240, 232, 222, .55); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .sheet__head { border-bottom: 1px solid var(--lg-hair-strong); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .card, .state, .coords, .card-form, .notice, .listwrap, .editor, .export, .src,
+  .srcrow, .quote, .about__card, .tcard__link, .lcard a, .sheet__inner, .floatcard,
+  .chips__row, .radio-row, .lg-seg, .statcard, .masthead, .backbar, .mastnav {
+    border: 1px solid var(--lg-hair-strong);
+  }
+  .masthead, .backbar, .mastnav, .dk-foot, .site-footer, .lg-thumb, .lens::before, .lg-rim {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .masthead { background: var(--frame-solid, #f7f3ef); }
+  .lg-thumb { border-color: rgba(23, 24, 26, .5); }
+}
+
+/* No backdrop-filter in this browser: opaque plates, same edges and depth. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* Nothing can be frosted here, so nothing stays see-through to try to be.
+     The two panel fills have to be tokens rather than another background list:
+     the rule that paints them (§2a) includes `.map-links a`, so `:is()` gives it
+     a class-and-type specificity that a plain `.card { background: … }` here
+     cannot beat. */
+  :root {
+    --lg-panel: #fffdfb;
+    --lg-panel-strong: #fffdfa;
+    --lg-toast: #1e1b18;
+    --lg-toast-bad: #9c2a14;
+    --lg-sheet-head: #fffcf7;
+    --lg-track: #d8c6ad;
+    --lg-track-on: var(--palm, #2f6b50);
+    --lg-ghost-dark: #3d3a36;
+    --lg-shot-note: #1b1a18;
+    --lg-hero-chip: #1b1a18;
+  }
+  :is(.masthead, .backbar, .mastnav, .dk-foot, .site-footer, .card, .state, .coords,
+      .card-form, .form__result, .map-links a, .notice, .listwrap, .editor, .export,
+      .src, .srcrow, .quote, .about__card, .tcard__link, .lcard a, .sheet__inner,
+      .sheet__head, .floatcard, .chips__row, .radio-row, .lg-seg, .statcard, .shot__note,
+      .hero__chip, .toast, .switch__track, .lg-switch__track, .round, .burger,
+      .backbar__btn, .quoter__nav, .iconbtn, .pill--ghost, .btn--quiet,
+      input, select, textarea) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .masthead, .backbar, .mastnav { background: var(--frame-solid, #f7f3ef); }
+  .dk-foot { background: var(--band, #e6ddd3); }
+  .site-footer { background: #24211e; }
+  .card, .state, .coords, .card-form, .notice, .listwrap, .editor, .export, .src,
+  .srcrow, .quote, .tcard__link, .lcard a, .sheet__inner, .floatcard,
+  .form__result, input, select, textarea { background: var(--panel, #fff); }
+  .about__card { background: #2a251f; }
+  .chips__row, .radio-row, .lg-seg { background: var(--band, #e6ddd3); }
+  .filter-chip[aria-pressed="true"], .radio:has(input:checked) { background: var(--indigo, #24211e); }
+  .lg-thumb { background: rgba(232, 167, 92, .8); }
+  .lens::before, .lg-rim { display: none; }
+}
+
+@media print {
+  .lg-thumb, .lg-rim, .mastnav__opt { display: none !important; }
+  .card, .tcard__link, .lcard a, .quote, .srcrow, .notice, .coords, .state,
+  .sheet__inner, .floatcard, .chips__row, .radio-row, .lg-seg, .listwrap, .editor,
+  .export, .masthead, .backbar, .mastnav, .dk-foot, .statcard {
+    background: #fff !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  /* The two photography plates above are re-declared from tokens here, which
+     would otherwise out-order landing.css's own print rule (this file loads
+     last): on paper they are bare, exactly as the site asks. */
+  .shot__note, .hero__chip {
+    background: none !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  /* The two night surfaces are the exception: a printer that drops background
+     graphics would leave their ivory writing on bare white paper, so on paper
+     they turn into a light plate and their text follows. */
+  .section--about, .about__card, .site-footer {
+    background: #fff !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    color: #17181a !important;
+  }
+  .about__card h3, .about__body, .ticks li, .crosses li,
+  .site-footer a, .site-footer p, .site-footer li, .site-footer b { color: #17181a !important; }
+  .ticks li::before { color: #1d6b3f !important; }
+  .crosses li::before { color: #a8442a !important; }
+}

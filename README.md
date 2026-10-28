@@ -48,9 +48,12 @@ the store list" below for what that means before you trust anything it shows you
 | `assets/css/styles.css` | The guide's components: layout, cards, filters, detail panel, the opening animation. It keeps the old token *names* (`--paper`, `--ink`, `--clay`, `--marigold`…) but their values are the new theme's, which is why ~700 lines of components survived the repaint untouched. |
 | `assets/css/landing.css` | The six content pages' theme. Self-contained — it does not load `styles.css` — and holds no `:root` of its own. The Home hero and the five figure frames are the only surfaces still dark, on purpose. |
 | `assets/css/admin.css` | The admin panel's theme, laid out for data entry. Loads `site-chrome.css` after it, so it declares only admin-only tokens (`--field`, `--danger`, `--panel-2`, the ok/warn pair, and the five-hue trade ramp) and inherits the rest. |
+| `assets/css/liquid-glass.css` | **The glass layer.** Loaded last by every page. Adds the four-tier material to the chrome, cards, fields, sheets and switches defined by the four files above, without restating any of them — it only ever overrides a token or adds an edge. See "The glass layer" below. |
 | `assets/img/market-street.svg` | The market-street illustration: the guide's hero, and the fallback figure on About and Listings. Hand-drawn vector, blank signboards on purpose — replace with real photographs when you have them. |
-| `assets/img/dark/` | Only the six **photographic** night scenes now: the Home hero and the five sub-page figures. The folder name is left over from the old dark theme — the recoloured SVG set that used to live here is gone, because every page now uses the light drawings in `assets/img/trade/`. |
-| `assets/img/dark/hero-market-street.jpg` | The Home hero backdrop — a **generated** market scene supplied by the owner, 1672×941, 238 KB. Not a photograph of ICHHAPUR, and the page says so. |
+| `assets/img/dark/` | The **photographic** night scenes: the Home hero in two frames and two codecs, plus the five sub-page figures. The folder name is left over from the old dark theme — the recoloured SVG set that used to live here is gone, because every page now uses the light drawings in `assets/img/trade/`. |
+| `assets/img/dark/hero-market-lit.{webp,jpg}` | The Home hero backdrop on wide screens — a **generated** market scene supplied by the owner, cropped to 1672×601 (148 KB WebP, 186 KB JPEG behind it). Built by `tools/make-images.mjs` from `vibe_images/art-hero-market-lettered_b310238e.png`. Not a photograph of ICHHAPUR, and the page says so. |
+| `assets/img/dark/hero-market-lit-phone.{webp,jpg}` | The same scene for screens under 900 px: a 900×635 crop of the lit storefronts (103 KB / 127 KB), chosen by the `<picture>` element so a tall narrow hero never shows a sliver through the middle of the wide one. |
+| `assets/img/dark/hero-market-street.jpg` | The previous hero backdrop, 1672×941. No longer referenced by any page; kept in the repo because it is owner-supplied artwork. |
 | `assets/img/dark/page-*.jpg` | The wide rounded image at the foot of each sub-page hero: `page-about`, `page-whats-here`, `page-listings`, `page-sources`, `page-contact`. All five are **generated** scenes in the site's night-market palette, 1792×1024, 275–391 KB each, and each figure is captioned as such. Replace them with real photographs when you have any. |
 | `assets/img/trade/` | One small drawing per category (`medicines`, `mobile`, `general`, `market`, `service`), shown at the top of every store card — in the guide, on the content pages and in the admin panel. They stand for the *trade*, never for the shop. `market.svg` also fills the smaller What's here and Contact figures; About and Listings use the wide `assets/img/market-street.svg`. |
 | `assets/img/illustration/` | Four drawn scenes in the site's own palette — `market-lane-wide`, `produce-stall`, `source-ledger`, `empty-lane` — as WebP (74–121 KB each). Encoded from `vibe_images/` by `tools/make-images.mjs`. Used on About, Listings, Sources and Contact, each captioned as a drawing rather than a photograph of ICHHAPUR. |
@@ -60,11 +63,29 @@ the store list" below for what that means before you trust anything it shows you
 | `assets/js/landing.js` | Fills the six content pages. One file serves all six: each renderer looks for the element it fills and returns when that page does not have it. |
 | `assets/js/admin.js` | The admin panel: the listing table, the edit form, photo resizing, validation, export, discard, and the `.cat-<trade>` class it puts on each row, filter and editor so the CSS ramp lands on the right listing. |
 | `assets/js/intro.js` | The opening signboard animation and its skip/fallback rules. |
+| `assets/js/liquid-glass.js` | **The glass layer's behaviour.** Loaded first and blocking by every page, so the tier is decided before the first paint. Sets `data-glass` on `<html>`, injects the two SVG lens filters the refraction band samples through, honours the header switch, rebuilds the admin panel's two status selects — the list filter and the field in the edit sheet — as sliding segmented controls, and slides a glass bead under the guide's filter chips and the suggestion form's radio rows. No WebGL, no dependency, ES5 — it has to run before the rest of the site's scripts do. |
+| `assets/js/liquid-glass-gl.js` | **The WebGL2 pass.** A second, opt-in layer for the three plates that sit on a *photograph* — the hero's PIN chip, the float card, a shot's caption — where a CSS blur can only dim the picture but a lens can bend it. It rebuilds the guide's own illustrations into a detached render target, frosts them, and runs a refraction shader over each plate's rounded-rectangle signed-distance field, then blits the result into one small `<canvas class="lg-gl-pane">` inside each plate. Driven by the same `--lg-s` the slider writes; if WebGL2 is unavailable, or the context is lost, it steps out and the CSS glass underneath is the page. |
+| `assets/css/liquid-glass-gl.css` | The three rules that contract needs: the pane fills its plate, sits behind the plate's content, and disappears in `solid`, `off`, `forced-colors` and print. |
 | `docs/research-notes.md` | Where every listing came from, what is unproven, and what to ask about. |
 | `scripts/serve.js` | Optional local preview server. Not deployed. |
 | `tools/site-audit.mjs` | **The checker.** Drives headless Chrome over CDP and scores all eight pages at 375 and 1200 px on nine things — contrast, rendered-pixel contrast, overflow, console, links, alt text, metadata, images, motion — and prints one weighted percentage. `--motion` runs the opposite pass (motion allowed) and proves nothing is left invisible. `--json <file>` writes the full detail. Exits non-zero below 90%. |
 | `tools/sync-check.mjs` | Opens the admin panel and all seven public pages as tabs of one browser, edits a listing through the real form, and checks what happens everywhere else — including that the save makes **zero** network requests and that an isolated browser profile (a stand-in for another device) still gets the published file. |
-| `tools/make-images.mjs` | Encodes `vibe_images/*.png` into the WebP illustrations, and renders `tools/og-card.html` and the icons into `assets/img/`. |
+| `tools/controls-check.mjs` | Proves the glass controls are actually controls. Clicks and arrow-keys every segmented control, bead row and the header switch on the real page, then asserts three things each time: the native `<select>`/radio/checkbox underneath holds the new value, the page reacted (rows filtered, editor repainted), and the bead or knob physically moved onto the new choice. Exits non-zero if any of the three is missing. |
+| `tools/tier-check.mjs` | The glass counterpart to `site-audit.mjs`. Drives every page through `refract`, `frost`, `solid` and `off` at 1200 and 375 px — and again under `prefers-reduced-transparency`, `prefers-contrast: more` and both together — measuring the pixels actually painted behind every text box that sits on glass against WCAG AA, counting any translucent plate left in a tier that must be opaque, and printing each tier's computed `backdrop-filter` so "these tiers really differ" is a value, not a claim. `TIER_SHOTS=dir` adds one PNG per page/tier. |
+| `tools/gl-smoke.mjs` | First light for the WebGL pass: did the shader compile, did it run, and is there real painted glass inside the plates it claims to cover — all read out of the page rather than from the renderer's own word. |
+| `tools/gl-pages.mjs` | The same questions page by page at 1280 and 390 px: which tier the probe chose, whether the SVG lens resolved on the chrome, and whether each plate painted after a scroll sweep brought it into view. |
+| `tools/gl-slider.mjs` | The brief's original complaint made testable: one keyboard interaction on the range, and five independent surfaces that must move with it — `--lg-s`, the resolved `backdrop-filter`, the SVG displacement, the shader's uniform and what is stored — plus Reset, the header switch and the hero counters, which are the biggest glass on the page. |
+| `tools/gl-plates.mjs` | Looks at the glass instead of the page: crops to each plate's box plus enough photograph around it to judge the bend, one PNG per plate per strength. |
+| `tools/gl-fallback.mjs` | Every exit the pass is supposed to have — no WebGL2, a lost context, `solid`, `off`, reduced transparency — each one landing back on the CSS glass with no pane, no host attribute and no suppressed band left behind. |
+| `tools/panes.mjs` | Reads the pixels each plate's `<canvas>` actually holds: buffer size, corner alpha (a rounded plate has nothing in the corner), painted-pixel count, mean and centre colour. `LG_LEVEL` picks the strength, a fourth argument saves the viewport as a PNG. |
+| `tools/glass-probe.mjs` | `node tools/glass-probe.mjs admin.html .card .sheet` dumps the current tier, how many refraction bands / drawn rings / beads / segments the page built, and per selector the resolved background, `backdrop-filter`, colour and box — then repeats the same readings with `liquid-glass.css` switched off, so a rule that broke a layout can be told apart from one that merely restyled it. One surface at a time, when the sweep says a number moved and you want to know why. |
+| `tools/glass-lib.mjs` | The CDP plumbing the eight smaller glass checks share: spawns headless Chrome on a throwaway profile, hands back `open`/`settle`/`png`/`emulate`, and kills the process tree by PID on the way out. It assumes the site is already served on `:4173`. |
+| `tools/masthead-check.mjs` | The header is where the glass controls live, so this is the check that the switch and the slider did not cost it its shape. It compares the **furthest right painted edge** of the header against the viewport rather than `scrollWidth` — the header's own `overflow-x: clip` means an overlong header grows no scrollbar and would report a clean pass while the round search button is cut off — and separately asserts the nav links stayed on one line. |
+| `tools/surface-coverage.mjs` | Answers "how much of this page is actually glass" instead of "the stylesheet is loaded". For every element the layer leaves translucent it reports the four ingredients glass is made of — a see-through fill, a frost or a bend behind it, a lit edge, and depth — grouped by class, on every page, at both widths. A plate missing its rim or its shadow is printed as a finding, because that is exactly the failure a screenshot of one card hides. |
+| `tools/gap-check.mjs` | Measures the empty band between the hero and the section after it — the distance from the last painted box inside the hero to the first painted box of what follows, at both widths — so "there is a gap" becomes a number. |
+| `tools/hero-shot.mjs` | The landing hero at 1280 and 390, one PNG each, cropped to the hero's own box. |
+| `tools/make-images.mjs` | Encodes `vibe_images/*.png` into the WebP illustrations, and renders `tools/og-card.html` and the icons into `assets/img/`. The two Home hero crops come from the owner-supplied `art-hero-market-lettered` source, and the script's `crop` argument is what places them: the lettering baked into that picture sits in its lower third, so the object-position in `landing.css` is chosen to keep the sign readable rather than centred. |
+| `tools/kill-test-chrome.ps1` | Windows-only tidy-up: kills any headless Chrome still holding one of the checkers' `ichh-*` profiles after a run was stopped early. Nothing on the site depends on it. |
 | `tools/og-card.html` | The share card as a page — same theme, same type — so the PNG can be re-rendered by the script instead of hand-made. |
 | `vibe_images/` | The four generated illustrations at full size, kept so `tools/make-images.mjs` can re-encode them. Not loaded by any page. |
 
@@ -201,6 +222,220 @@ below AA.
 
 ---
 
+## The glass layer
+
+Two files sit on top of the theme and change nothing about it.
+`assets/css/liquid-glass.css` holds every colour, edge and shadow;
+`assets/js/liquid-glass.js` does the four things CSS cannot. Both load **last** in every
+page's `<head>`, so an equal-specificity glass rule wins without the layer having to shout,
+and the script is a plain blocking tag so the tier is written on `<html data-glass>` **before
+the first paint** — no page flashes in the wrong material. A third pair,
+`assets/css/liquid-glass-gl.css` (right after the glass stylesheet) and
+`assets/js/liquid-glass-gl.js` (right before the behaviour file), is the WebGL2 pass that bends
+a photograph through three plates; it mounts only when the tier allows it and steps out
+entirely if the browser will not give it a context. No dependencies, no build step, no
+`npm install` — the shader is hand-written GLSL and everything else is ES5 and CSS, like the
+rest of the site.
+
+It is material on surfaces the site already had. Nothing moved, nothing was renamed, and no
+control was added that does not do something.
+
+**A glass surface is four things at once** — a translucent fill, a frost, an edge of light,
+and depth. A plate with only the first two is a blurred rectangle. The lit top-left rim, the
+ambient shadow that floats it and the inset highlight along its top edge are what make it read
+as a material, and they are the parts that survive in every tier.
+
+**The background bends, and the browser does the bending.** The chrome surfaces — the
+masthead, the back bar, the mobile navigation sheet, the store detail's sticky head, the Home
+stat cards, the toast — carry an edge band (`--lg-band`: 14px by default, `12px` on a bar,
+`7px` on a chip) drawn by `.lens::before`. In the top tier that band samples what is behind
+it through an SVG
+displacement filter: `feTurbulence` builds a slope field, a small `feGaussianBlur` stops it
+reading as grain, and `feDisplacementMap` drags the backdrop sideways along it
+(`liquid-glass.js:119-147`; the filters are `#lg-lens` for a thin band and `#lg-lens-wide` for
+a bar). It is applied through `backdrop-filter: url(#lg-lens) blur() saturate()`, which the
+compositor renders. This is the path for everything floating over *live text* — the masthead,
+the drawer, a sheet of listings — because a `<canvas>` cannot read the composited page, and
+rebuilding a heading that has just slid underneath a plate would paint cream where the word is.
+
+**Three plates bend through a real GPU pass instead.** `.hero__chip`, `.floatcard` and
+`.shot__note` sit on illustrations the guide owns, so their backdrop *can* be rebuilt: the pass
+in `assets/js/liquid-glass-gl.js` draws those images into a detached render target, frosts them
+with a separable Gaussian, and resolves each plate as a superellipse signed-distance field —
+Snell-derived edge bend, per-channel IOR dispersion, Fresnel and specular glare computed in LCH.
+The result is blitted per plate into a `<canvas class="lg-gl-pane">` at `inset: 0; z-index: -1`,
+so the page's own text, focus ring, border and shadow are untouched and the glass paints
+*underneath* them. A frame is a snapshot of the page, so the pass retakes it whenever the page
+changes underneath it: a scroll, a resize, the grid re-filtering and bringing new plate nodes, an
+illustration that finishes loading late, a plate the stylesheet closes up, and the end of any
+transition — because a plate's fill is read from the stylesheet, and reading it mid-animation
+keeps the colour it was leaving.
+The displacement strength and this pass read the same `--lg-s`, so the
+visitor's slider stays one control for the whole material rather than two that disagree.
+
+**Credit and licence.** That pass is adapted from [iyinchao/liquid-glass-studio](https://github.com/iyinchao/liquid-glass-studio)
+(MIT, Copyright (c) 2024 Charles Yin), whose notice is retained at the top of the file. It is a
+standalone WebGL *studio*, not a component library — there is no `<LiquidGlass>` element or prop
+set to import — so what was taken is its shader maths and render pipeline, rewritten to drive
+normal HTML elements. None of the studio's demo UI is on this site; the header's own switch and
+the strength slider are the only controls.
+
+**What is deliberately not shader glass.** The three hero counters (`.statcard`) are the most
+obvious candidates on the page and are left on stylesheet frost: measured with `tools/panes.mjs`,
+as soon as the three white cards join the plate list the dark chip sharing the frame comes out of
+the pass at `rgb(236,234,233)` instead of `rgb(51,50,47)` — its ivory text on a white pill at
+1.08:1, and at 375 px that is what a person on a phone sees. The chip's own uniforms are identical
+in both runs, so the fault is in the shared backdrop buffer rather than the plate table, and that
+is a bug to fix rather than a value to tune. The masthead, drawer and every dialog keep the SVG
+lens for the reason above. One plate, the float card, carries a floor on its own fill (`.84`
+against the CSS `.7`) because it is the only shader surface a person actually reads: bent
+illustration underneath otherwise pulls its two small lines to 4.39:1.
+
+**No WebGL2 is a normal browser, not an error.** The pass asks for a `webgl2` context once and,
+if the answer is no, never runs; a context *lost* mid-visit takes the same exit live — the panes
+are dropped and the CSS glass that was already underneath becomes the page again, with no
+transparent rectangle left behind. `?lg-gl=on` asks a build that reports no WebGL2 (a
+software-only headless Chrome) to render anyway; it is a testing escape hatch and no visitor URL
+contains it.
+
+Surfaces that already frost their own backdrop (a stat card, a store card) get the band
+*drawn* rather than sampled (`.lg-rim`): a backdrop blurred twice has nothing left to bend,
+and sampling there would pay a second full re-blur for a ring of light. The same logic
+applies to a control that lives *inside* a glass surface — at desktop width the navigation
+sits in the masthead, so it carries no fill and no second blur of its own, and picks its
+plate back up at 899px where it becomes the drawer floating over the page.
+
+**Four tiers**, worked out once and written on the `<html>` element before anything paints:
+
+| Tier | What you get | Who gets it |
+| --- | --- | --- |
+| `refract` | frost **and** the bent edge band | a browser that parses `url()` inside a backdrop filter — Chromium today |
+| `frost` | the same surfaces; the band is drawn as light instead of sampled as glass | a browser that frosts but will not bend a backdrop through a filter reference |
+| `solid` | no translucency anywhere: every plate becomes the opaque colour it was already mixing toward, edges and depth kept | no `backdrop-filter` at all, or `prefers-reduced-transparency: reduce`, or `prefers-contrast: more` |
+| `off` | no frost, no band, nothing see-through: every plate goes back to the opaque colour it was mixing toward, keeping only the edge and the shadow that float it | the visitor, with the header switch |
+
+The tier is **probed, not guessed from a user-agent string**: the script writes
+`backdrop-filter: url(#lg-lens) blur(6px) saturate(180%)` onto a detached element and reads it
+back. A value that survives the round trip is a value that browser accepts. WebKit and Firefox
+do not accept it, and none of them can be trusted from a UA string.
+
+**The switch is the one control the layer adds.** "Liquid glass" sits in the header on all
+eight pages (`site-nav.js:141-153`, `#glassSwitch`). *Off* is remembered in `localStorage`
+under `ichhapur.glass`; *on* is not, because the tier has to be re-derived from whatever the
+browser says next visit. It is a real checkbox with a real label, tabbable, with a 3px focus
+ring on the track.
+
+**Sliding controls, and what they actually drive.**
+
+- A glass **bead** slides under the active choice in the two rows that already had a choice
+  to make — the guide's category chips, and the suggestion form's "a store that is missing /
+  a correction to a listing" radio row — and it is the *site's own* state that moves it, so
+  filtering, deep links (`?cat=mobile`), reset and the admin panel's live sync all carry the
+  bead with them.
+- Two **switches** ride on one glass track: the header's "Liquid glass" and the guide's "Only
+  show well-placed listings". Both are the real checkbox underneath, the knob travels 20px
+  inside its track, and the "on" fill is the site's own confirmed-green.
+- The admin panel's **two status dropdowns** — the filter above the table and the field inside
+  the editor — are rebuilt as segmented glass controls. Each is a real `radiogroup` with arrow-key
+  and Home/End support, but the `<select>` stays the thing that holds the value: the table, the
+  export and the saved draft all read it, and the group writes to it and dispatches the `change`
+  the page already listens for. The select's own `value` setter is wrapped (the prototype's
+  descriptor is called, never replaced) so a script writing to it — the Discard button does —
+  moves the bead too, without firing an event.
+
+`node tools/controls-check.mjs` asserts all of that: 51 checks, each one reading the native
+control's value, the page's own reaction (rows filtered, editor repainted), and the bead's new
+box.
+
+**Where it is.** Header, back bar and the mobile drawer; the store detail sheet's sticky head
+and its close button; every card and panel (guide listings, About cards, source rows, quotes,
+the admin list, the editor, the export box); the search field, every input, select and
+textarea and their focus rings; the category chips, radio rows and segmented selectors; the
+buttons, pills, round icon buttons and the quotation pager; the stat cards; the figure
+captions and the hero's location chip over the photography; the toast; the About band and both
+footers. The guide's own dark band keeps its colour and gains an edge.
+
+**The 44 px tap floor.** Both design references this site is held to put the smallest
+tappable axis at 44 px, and the material was drawn at a desktop size first: measured on the
+live pages the header switch was 134×30, its Reset 51×26, a segmented option 95×36, a filter
+chip 61×41, a quiet button 113×34 and the three masthead discs 38×38. The hit area is what
+was fixed, not the picture — a transparent `::after` adds nothing a person can see. Each ring
+is written as *the target itself, centred on the control* (`height: 44px; top: 50%;
+transform: translateY(-50%)`) rather than as an inset from its edge, because every one of
+these carries a 2 px rim and an absolutely positioned box is measured from the **padding**
+edge: the first version, written as insets, came back 40 px tall on all eight controls.
+`left/right: 0` keeps a wide button's ring inside its own width so it never reaches a
+neighbour. The three discs are the one pair short on both axes, so their row gap went from
+5.6 px to 6 px — .4 px per gap, which is what stops the next disc's ring stealing the last
+pixel of this one's (at 5.6 the middle disc measured 43 wide). Every control on every page
+now walks out to exactly **44×44**, measured by stepping a pixel at a time from each
+control's centre with `elementFromPoint` until the point stops resolving to it.
+
+**The one thing that cost more than it was worth.** Widening that disc gap by the "proper"
+8 px instead — the number the touch guidelines quote — grew the tail by 4.8 px, and the
+header row has no slack at 1318 px: the whole control row wrapped onto a second line and the
+masthead went from 71 px to 112. So the gap is 6 px, and the second line is handled where it
+actually belongs.
+
+**Why the header is two lines between 900 and 1317 px.** It is not a squeeze, it is the
+choice the pass documents: the brand, the six nav links and the call to action already fill
+the bar at those widths, and a control nobody can reach is worse than a header one line
+taller. So the switch and the slider take a row of their own underneath, right-aligned, and
+`tools/masthead-check.mjs` asserts the parts that must not give way — nothing painted past
+the viewport (`.dk-frame` clips `overflow-x`, so an overlong header grows no scrollbar and
+just loses a button), the nav links not absorbing the cost, and the "Open the guide" pill
+never narrowing. Because that second row appears and disappears with the width, the chrome
+height above an anchored section cannot be a constant: `site-nav.js` measures the masthead
+*and* the back bar and publishes `--chrome-h`, which `styles.css` adds to
+`scroll-margin-top`. Verified at 1200 px (`--chrome-h=168px`, sections landing at 180) and at
+375 px (`121px`, landing at 133).
+
+**Motion, and the ways out.** The bead glides with a `cubic-bezier(.32,.9,.24,1)` at `--lg-t:
+.34s` and seats itself *without* animation when it is a layout change rather than a gesture —
+opening a sheet is not a touch on the control inside it, and a bead sliding across while the
+panel rises reads as a glitch. `prefers-reduced-motion` puts every one of those transitions at
+`.001ms`, including the bead's squash. `prefers-reduced-transparency` and `prefers-contrast:
+more` collapse the layer to the `solid` tier, with the hairline ring strengthened in the
+contrast case. `@supports not (backdrop-filter)` does the same for a browser that cannot frost
+at all. `forced-colors` is left to the site's own rules, and `@media print` flattens every
+plate to paper from inside the glass file, because that file loads last and would otherwise
+out-order the print block in `landing.css`.
+
+**Measured, not assumed.** `node tools/tier-check.mjs` walks all eight pages plus the four
+states glass only shows on request (store sheet, nav drawer, admin editor, toast) and the
+intro overlay, in **all four tiers**, and then re-measures the six shader plates at level 100
+in both viewports — **133 page/tier states, 1394 text boxes sampled on the glass itself, none
+below WCAG AA**, and nothing left translucent in `solid` or `off`. The twelve `gl-100` rows
+are the ones counted off a screenshot, so their pixels come from the GPU pass rather than
+from `getComputedStyle`; a plate that paints but yields no text to measure is reported as a
+failure, not as an empty pass. The same pass writes a PNG per state to `tools/tiers/` so the
+material can be looked at, not just counted. Underneath it, the site's own audit still passes
+at **100.0% weighted** with zero stuck animations, the control harness passes **51/51** — and
+51/51 again with reduced motion forced — and the data sync check passes **25/25**. The WebGL
+layer on top has its own five harnesses (`gl-smoke`, `gl-pages`, `gl-slider`, `gl-plates`,
+`gl-fallback`), and all five exit 0. `node tools/masthead-check.mjs` walks the header through
+fourteen widths on three pages with the controls on and off and comes back clean: nothing
+painted past the viewport, the nav links never absorbing the glass row's height, the call to
+action never narrowing. And the tap floor is measured rather than asserted — stepping outward
+from each control's centre one CSS pixel at a time with `elementFromPoint`, across six
+page/width combinations, every switch, slider, Reset, disc, burger, icon button, chip,
+segmented option and quiet button resolves to **at least 44×44**, with zero exceptions.
+
+**Where this departs from Apple, on purpose.** The layer was also reviewed against the iOS 27
+design language it is named after, and three of its rules are deliberately not followed. It
+recommends *quiet surfaces* and lists glass on cards and list rows as the anti-pattern to
+avoid; this site puts it on both, because that is the direction the owner chose and the layer
+is the product's look rather than a navigation chrome over other content. It asks for spring
+motion; the bead and the reveals run on the site's own `cubic-bezier(.32,.9,.24,1)` at
+`--lg-t: .34s`, which is inside the sub-0.6 s budget springs are there to enforce. It presses
+at 0.9; this site presses at .96–.985, which is what its buttons did before the glass
+existed. What it asks for that this site does **not** do is integrate with history: the store
+sheet, the nav drawer and the admin editor open without a `pushState`, so browser Back leaves
+the page instead of closing the panel. That is a real gap, it predates the glass layer, and it
+is the obvious next piece of work — not something the frosted chrome made worse.
+
+---
+
 ## Editing the store list
 
 There are two ways, and they are meant to be used together.
@@ -321,7 +556,7 @@ reveals **ICHHAPUR** in about 2.2 seconds.
    placeholders I drew, not your branding.
 5. **Photographs** of the market, taken by you or explicitly licensed to this project.
    The guide hero uses a hand-drawn illustration (`assets/img/market-street.svg`). The Home
-   hero now sits over `assets/img/dark/hero-market-street.jpg`, a generated market scene the
+   hero now sits over `assets/img/dark/hero-market-lit.jpg`, a generated market scene the
    owner supplied for atmosphere — it is labelled as such in the caption under the hero, and
    it is not a record of this market, so a real photograph should replace it when one
    exists. The five sub-pages each open with a generated scene of their own
@@ -364,20 +599,50 @@ reveals **ICHHAPUR** in about 2.2 seconds.
 
 ## Checking it yourself
 
-Both checkers are plain Node (run with v22.14), need the preview server up, install
+The checkers are plain Node (run with v22.14), need the preview server up, install
 nothing and use the Chrome already on the machine:
 
 ```
-node scripts/serve.js                    # leave this running on 127.0.0.1:4173
-node tools/site-audit.mjs                # the score, plus every failure it found
-node tools/site-audit.mjs --motion       # motion allowed — does the reveal layer leave anything hidden?
+node scripts/serve.js                     # leave this running on 127.0.0.1:4173
+node tools/site-audit.mjs                 # the score, plus every failure it found
+node tools/site-audit.mjs --motion        # motion allowed — does the reveal layer leave anything hidden?
 node tools/site-audit.mjs --json out.json # same run, full detail per text box
-node tools/sync-check.mjs                # admin -> every page, and how far that does NOT reach
+node tools/sync-check.mjs                 # admin -> every page, and how far that does NOT reach
+node tools/controls-check.mjs             # operate every glass control for real and prove the page changed
+node tools/tier-check.mjs                 # every page in all four tiers: contrast on glass, and the fallbacks
+node tools/gl-smoke.mjs                   # the WebGL pass: shader compiled, ran, and left real painted glass in the plates
+node tools/gl-pages.mjs                   # the same, page by page at 1280 and 390, after a scroll sweep
+node tools/gl-slider.mjs                  # one keyboard move on the range, five surfaces that must follow it
+node tools/gl-plates.mjs                  # one PNG per plate per strength — look at the glass, not the page
+node tools/gl-fallback.mjs                # every exit: no WebGL2, lost context, solid, off, reduced transparency
+node tools/panes.mjs 1280 900             # what each plate's canvas actually holds: corner alpha, coverage, colour
+node tools/masthead-check.mjs             # the header at 14 widths, controls on and off: nothing off-screen, nothing squeezed
+node tools/surface-coverage.mjs           # does every translucent plate still have fill + frost + edge + depth
+node tools/gap-check.mjs                  # how many pixels of empty band sit between the hero and what follows
+node tools/hero-shot.mjs                  # the landing hero at 1280 and 390, one PNG each
+node tools/glass-probe.mjs index.html .card   # one surface, read out with the glass on and then switched off
 ```
 
 `CHROME=/path/to/chrome node tools/site-audit.mjs` overrides the browser path. The
 audit launches Chrome with `--force-prefers-reduced-motion`, so the scored run measures
 the calm version of every page; `--motion` drops that flag and checks the animated one.
+
+The glass checkers have the same escape hatch, plus a few switches of their own:
+
+- `ICHH_BASE=http://host:port/` points any checker at a different origin.
+- `TIER_PAGES=index.html,admin.html node tools/tier-check.mjs` narrows the sweep; without
+  it, all eight pages run, at 1200 and 375, in `refract`, `frost`, `solid` and `off`, and
+  again under `prefers-reduced-transparency`, `prefers-contrast: more` and both together.
+- `TIER_SHOTS=tools/tiers node tools/tier-check.mjs` also writes one screenshot per
+  page/tier — the contrast numbers say a plate is legible, the PNGs say whether it reads
+  as glass.
+- `LG_REDUCED=1 node tools/controls-check.mjs` re-runs the whole control suite with the
+  system's reduce-motion preference on. The bead then has no glide to travel, so every
+  "it moved to the right choice" assertion has to land immediately — which is what a
+  person with that setting would check by eye.
+- `BEAD_DUMP=1 node tools/controls-check.mjs` prints each bead's box and its choice's box
+  and stops, which is how you tell a 2 px-wide bead (the seat was never written) from a
+  bead that simply slid to the wrong place.
 
 ---
 
@@ -389,10 +654,12 @@ Built and checked locally.
 only" filter, empty and error states, store details panel, directions links, map, suggestion
 form, keyboard navigation, reduced-motion and low-power fallbacks. It carries the shared
 frosted masthead like every other page, so the old `.site-header` rules are gone from
-`styles.css` and the section anchor offset was raised to clear the taller chrome
-(`scroll-margin-top: 128px` — header plus back bar; the bar's offset is measured in JS,
-because that height is not a number worth hard-coding). Its own footer, the accuracy
-note and the replay link are unchanged.
+`styles.css` and the section anchor offset is measured rather than guessed: `site-nav.js`
+writes `--chrome-h` from the masthead and the back bar together, and `styles.css` adds 12 px
+to it (`scroll-margin-top: calc(var(--chrome-h, 116px) + 12px)`). A fixed number was wrong
+here in particular, because the masthead wraps to a second line between 900 and 1317 px and
+the guide's anchored sections have to land below both bars at every width. Its own footer,
+the accuracy note and the replay link are unchanged.
 
 **The six content pages** (`landing.html`, `about.html`, `whats-here.html`, `listings.html`,
 `sources.html`, `contact.html`) — checked at 375, 620 and 1200 px. Each page's hero or
@@ -413,13 +680,21 @@ rather than hard-coded. The mobile drawer goes full-width, closes on Escape and 
 focus to the burger. Heading levels were checked page by page and the two places where a
 card row jumped from `h1` straight to `h3` now have a real `h2`.
 
-**The Home hero backdrop** — `assets/img/dark/hero-market-street.jpg` sits in `.hero__media`
+**The Home hero backdrop** — `assets/img/dark/hero-market-lit.jpg` sits in `.hero__media`
 at `opacity: .8`, a layer that holds the image and nothing else, so no text, card or button
-inherits it. Two `linear-gradient` scrims on `.hero::after` darken the left and the bottom so
-the type has something to sit on; the crop keeps the lit storefronts — the whole width on
-desktop, and the right of the source on mobile (`object-position: 84% 56%` above 900 px)
-rather than the empty road. `.hero` carries `background-color: #1b1a18` for when the image
-fails to load, and print drops the backdrop to white with black type.
+inherits it; a `<picture>` element puts the WebP in front of it and swaps to the tighter
+`hero-market-lit-phone` crop under 900 px. Two `linear-gradient` scrims on `.hero::after`
+darken the left and the bottom so the type has something to sit on; the crop keeps the lit
+storefronts (`object-position: 72% 50%` on wide screens, `62% 50%` on phones) rather than the
+empty road at the left of the scene. `.hero` carries `background-color: #1b1a18` for when the
+image fails to load, and print drops the backdrop to white with black type.
+
+The art arrives with "ICHHAPUR" lettered across its sky, and both shipped frames cut that
+band off at `y = 340` of the source. At the hero's own height there is no vertical crop that
+keeps the storefronts *and* drops the lettering, and the words landing behind the headline
+and under the stat cards read as a broken image ("ICHHAP" with the tail hidden) rather than a
+wordmark. The name on this page is therefore the type one — `.hero__ghost`, at 11% — and the
+full lettered source stays in `vibe_images/` if it is ever wanted as a poster.
 
 The three stat boxes in that hero are iOS-style frosted glass, inverted for the light theme: a
 72% white fill (`rgba(255, 255, 255, .72)`) over `backdrop-filter: blur(18px) saturate(180%)`,
@@ -428,14 +703,16 @@ and a top sheen from a `::after` that fades out at 62%. The blur is on the card'
 only, so no text, image or button inherits an opacity. Browsers without `backdrop-filter`, and
 visitors who ask for less transparency, get the same shape with a solid panel instead; print
 drops the glass too. The headline, the lede and both lines of each card are inside the audited
-set below — none of them falls below AA at 375 or 1200 px.
+set below — none of them falls below AA at 375 or 1200 px. These three stay the CSS material
+even at `refract`: they are deliberately not shader plates, for the reason recorded under
+**What is deliberately not shader glass** above.
 
 **The repaint, verified** — `node tools/site-audit.mjs` now measures it on every run. Each
 visible text box on all eight pages is checked twice at 375 and at 1200 px: once from the
 element-to-root stack of translucent layers (`::after` scrims read off computed styles), then
 again from a screenshot taken with the glyphs made transparent, where the pixels inside the
 text's own box are the real backdrop. That second pass is what catches copy dropped on a
-bright part of a photograph — 1,294 boxes measured twice, 72 of them sitting over a picture.
+bright part of a photograph — 1,316 boxes measured twice, 72 of them sitting over a picture.
 **100.0% weighted, zero failures at either width**, zero console errors, zero broken images,
 and no document-level horizontal overflow (`scrollWidth === clientWidth` everywhere — the only
 clipped rails are the ticker and the filter strip, both intentional). Two real defects came out

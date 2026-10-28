@@ -37,6 +37,24 @@ const ICONS = [
   ["assets/favicon.svg", "assets/img/icon-32.png", 32],
 ];
 
+/* The hero art ships in two frames and two codecs, and neither frame is the whole
+   picture. The scene arrives with "ICHHAPUR" lettered across its sky, and at the
+   hero's own height there is no vertical crop available that would keep the
+   storefronts and drop the lettering — so the lettering would land behind the
+   page's headline and the stat cards and read as "ICHHAP" cut in half. Both
+   frames therefore start at y=340, below the words, and the site's own CSS
+   wordmark keeps the name. The full lettered source stays in vibe_images/ if the
+   owner ever wants it as a poster.
+   WebP with a JPEG behind it, because the fallback is the one that has to load
+   when the browser cannot be trusted with the smaller format. */
+const HERO_SRC = "vibe_images/art-hero-market-lettered_b310238e.png";
+const HERO = [
+  { src: HERO_SRC, out: "assets/img/dark/hero-market-lit", w: 1672, q: 0.80,
+    crop: { x: 0, y: 340, w: 1672, h: 601 } },
+  { src: HERO_SRC, out: "assets/img/dark/hero-market-lit-phone", w: 900, q: 0.80,
+    crop: { x: 820, y: 340, w: 852, h: 601 } },
+];
+
 fs.mkdirSync(path.join(ROOT, "assets/img/illustration"), { recursive: true });
 
 const chrome = spawn(CHROME, ["--headless=new", "--no-sandbox", "--disable-gpu",
@@ -94,18 +112,21 @@ const load = async (url) => {
   await sleep(900);
 };
 
-/* Draw a served image into a canvas at a chosen width and hand back the bytes. */
-const encode = (src, type, w, q) => ev(`(async()=>{
+/* Draw a served image — or a rectangle of it — into a canvas at a chosen width
+   and hand back the bytes. */
+const encode = (src, type, w, q, crop) => ev(`(async()=>{
   const img = new Image();
   img.src = ${JSON.stringify(BASE + src)};
   await img.decode();
-  const h = Math.round(img.naturalHeight * (${w} / img.naturalWidth));
+  const sx = ${crop ? crop.x : 0}, sy = ${crop ? crop.y : 0};
+  const sw = ${crop ? crop.w : "img.naturalWidth"}, sh = ${crop ? crop.h : "img.naturalHeight"};
+  const h = Math.round(sh * (${w} / sw));
   const c = document.createElement("canvas");
   c.width = ${w}; c.height = h;
   const x = c.getContext("2d");
-  x.drawImage(img, 0, 0, c.width, c.height);
+  x.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
   const url = c.toDataURL(${JSON.stringify(type)}, ${q});
-  return { url, w: c.width, h, from: img.naturalWidth + "x" + img.naturalHeight };
+  return { url, w: c.width, h, from: sx + "," + sy + " " + sw + "x" + sh + " of " + img.naturalWidth + "x" + img.naturalHeight };
 })()`);
 
 function writeData(dataUrl, repoPath) {
@@ -132,6 +153,15 @@ for (const [src, out, w, q] of ART) {
   const r = await encode(src, "image/webp", w, q);
   const bytes = writeData(r.url, out);
   report.push([out, r.w + "x" + r.h, bytes, src]);
+}
+
+for (const job of HERO) {
+  for (const [type, ext] of [["image/webp", "webp"], ["image/jpeg", "jpg"]]) {
+    const r = await encode(job.src, type, job.w, job.q, job.crop);
+    const out = job.out + "." + ext;
+    const bytes = writeData(r.url, out);
+    report.push([out, r.w + "x" + r.h, bytes, job.src + (job.crop ? " [crop]" : "")]);
+  }
 }
 
 for (const [src, out, w] of ICONS) {

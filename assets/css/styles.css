@@ -338,7 +338,10 @@ strong { font-weight: 600; }
 }
 
 /* ---------- sections ---------- */
-.section { padding: 3rem 0; scroll-margin-top: 128px; }
+/* The chrome above an anchor is the masthead plus the back bar, and the first of
+   those wraps to a second line at some widths, so site-nav.js measures both and
+   hands over --chrome-h. The 116px fallback is header + bar at 375px. */
+.section { padding: 3rem 0; scroll-margin-top: calc(var(--chrome-h, 116px) + 12px); }
 .section__head { max-width: 62ch; margin-bottom: 1.7rem; }
 .section__lede { color: var(--muted); font-size: 1.05rem; margin: 0; }
 .section--stores { background: var(--cream); }

@@ -28,6 +28,10 @@
 <link rel="stylesheet" href="assets/css/landing.css">
 <link rel="canonical" href="landing.html">
 <script>document.documentElement.className += " dk-js";</script>
+<link rel="stylesheet" href="assets/css/liquid-glass.css">
+<link rel="stylesheet" href="assets/css/liquid-glass-gl.css">
+<script src="assets/js/liquid-glass-gl.js"></script>
+<script src="assets/js/liquid-glass.js"></script>
 </head>
 
 <body class="dk">
@@ -41,8 +45,16 @@
     <!-- ==================== HERO ==================== -->
     <section class="hero" id="top">
       <div class="hero__media" aria-hidden="true">
-        <img src="assets/img/dark/hero-market-street.jpg" width="1672" height="941"
-             alt="" decoding="async" fetchpriority="high">
+        <picture>
+          <source media="(max-width: 899px)" type="image/webp" width="900" height="635"
+                  srcset="assets/img/dark/hero-market-lit-phone.webp">
+          <source media="(max-width: 899px)" type="image/jpeg" width="900" height="635"
+                  srcset="assets/img/dark/hero-market-lit-phone.jpg">
+          <source type="image/webp" width="1672" height="601"
+                  srcset="assets/img/dark/hero-market-lit.webp">
+          <img src="assets/img/dark/hero-market-lit.jpg" width="1672" height="601"
+               alt="" decoding="async" fetchpriority="high">
+        </picture>
       </div>
       <p class="hero__ghost" aria-hidden="true">ICHHAPUR</p>
 

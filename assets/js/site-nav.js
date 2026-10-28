@@ -36,6 +36,18 @@
     return n;
   }
 
+  /* The same key liquid-glass.js owns. Read, never written, from here: the
+     header is built once and the slider's number is the glass layer's business
+     after that. Storage blocked or a value someone has typed into devtools both
+     land on the default rather than on NaN. */
+  function savedStrength() {
+    var v;
+    try { v = parseInt(window.localStorage.getItem("ichhapur.glass.strength"), 10); }
+    catch (e) { v = NaN; }
+    if (isNaN(v)) return 100;
+    return Math.max(0, Math.min(100, v));
+  }
+
   /* Static path data only — never a string built from the listings. */
   function svg(size, viewBox, paths) {
     var s = document.createElementNS(SVG_NS, "svg");
@@ -134,6 +146,58 @@
       ul.appendChild(li);
     });
     nav.appendChild(ul);
+
+    /* The one control the glass layer adds to the header, and it does one real
+       thing: it turns the material off for this visitor and remembers that.
+       liquid-glass.js finds it by id and wires it. */
+    var opt = el("div", "mastnav__opt");
+    var glass = el("label", "lg-switch");
+    var glassBox = el("input");
+    glassBox.type = "checkbox";
+    glassBox.id = "glassSwitch";
+    var glassTrack = el("span", "lg-switch__track");
+    glassTrack.setAttribute("aria-hidden", "true");
+    glassTrack.appendChild(el("span", "lg-switch__knob"));
+    glass.appendChild(glassBox);
+    glass.appendChild(glassTrack);
+    glass.appendChild(el("span", "lg-switch__text", "Liquid glass"));
+    opt.appendChild(glass);
+
+    /* The strength of that material, and it is one number: liquid-glass.js reads
+       it and writes it to `--lg-s` on the root, which every blur, every panel's
+       translucency, the SVG lens's displacement and the shader's own reveal are
+       all functions of. So this slider is not a picture of a control — moving it
+       changes the glass on the page in the same frame.
+       The value is read here rather than left at `max` because a slider that
+       snaps from 100% to the saved 40% one frame after load is the one visible
+       lie a control like this can tell. */
+    var level = el("div", "lg-level");
+    var levelLabel = el("label", "lg-level__label", "Glass effect");
+    levelLabel.htmlFor = "glassStrength";
+    var range = el("input");
+    range.type = "range";
+    range.id = "glassStrength";
+    range.className = "lg-level__range";
+    range.min = "0";
+    range.max = "100";
+    range.step = "5";
+    range.value = String(savedStrength());
+    range.setAttribute("aria-describedby", "glassStrengthValue");
+    var value = el("output", "lg-level__value");
+    value.id = "glassStrengthValue";
+    value.setAttribute("for", "glassStrength");
+    value.textContent = savedStrength() + "%";
+    var reset = el("button", "lg-level__reset");
+    reset.type = "button";
+    reset.id = "glassReset";
+    reset.appendChild(document.createTextNode("Reset"));
+    level.appendChild(levelLabel);
+    level.appendChild(range);
+    level.appendChild(value);
+    level.appendChild(reset);
+    opt.appendChild(level);
+    nav.appendChild(opt);
+
     head.appendChild(nav);
 
     var tail = el("div", "masthead__tail");
@@ -258,10 +322,16 @@
     /* the back bar sticks directly under the masthead, and so does the top of
        the mobile menu — both heights come from padding and font size, so they
        are measured rather than guessed. `top` is ignored on the desktop nav,
-       which is not positioned. */
+       which is not positioned.
+       The two heights are also published as --chrome-h, because the guide's
+       section anchors have to land below both of them; a header that wraps to a
+       second line at some widths makes any fixed number wrong there. */
     function stickBar() {
       if (!head) return;
-      var h = head.offsetHeight + "px";
+      var h = head.offsetHeight;
+      document.documentElement.style.setProperty("--chrome-h",
+        h + (back ? back.offsetHeight : 0) + "px");
+      h = h + "px";
       if (back) back.style.top = h;
       if (nav) nav.style.top = h;
     }

@@ -59,7 +59,10 @@
 .cat-medicines { --cat: #2f6b50; --cat-tint: rgba(47, 107, 80, .085);  --cat-line: rgba(47, 107, 80, .34); }
 .cat-mobile    { --cat: #5f2f48; --cat-tint: rgba(95, 47, 72, .085);   --cat-line: rgba(95, 47, 72, .34); }
 .cat-general   { --cat: #8a4a22; --cat-tint: rgba(138, 74, 34, .085);  --cat-line: rgba(138, 74, 34, .34); }
-.cat-market    { --cat: #856908; --cat-tint: rgba(133, 105, 8, .085);  --cat-line: rgba(133, 105, 8, .34); }
+/* market sits one step darker than the amber it comes from: #856908 printed on
+   its own 8.5% tint measured 4.40:1 at the tag's 12px, and AA wants 4.5. It was
+   the lightest of the five hues; this puts it back at the shared lightness. */
+.cat-market    { --cat: #7a5f07; --cat-tint: rgba(122, 95, 7, .085);   --cat-line: rgba(122, 95, 7, .34); }
 .cat-service   { --cat: #27506e; --cat-tint: rgba(39, 80, 110, .085);  --cat-line: rgba(39, 80, 110, .34); }
 /* "All trades" is not a trade, so the filter control goes grey rather than
    borrowing one of the five hues. */

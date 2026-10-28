@@ -30,7 +30,7 @@
 
    Run:  node tools/site-audit.mjs [--json path] [page.html ...]
    ========================================================================= */
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -40,6 +40,15 @@ const CHROME = process.env.CHROME || "C:\\Program Files\\Google\\Chrome\\Applica
 const BASE = process.env.ICHH_BASE || "http://127.0.0.1:4173/";
 const PROFILE = path.join(os.tmpdir(), "ichh-audit-" + Date.now());
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* Sixteen passes take minutes and the report only prints at the end, so a stall
+   anywhere in the middle is invisible. AUDIT_PROGRESS=tools/audit-progress.log
+   writes one line per step, as it happens, with the seconds since the start. */
+const PROGRESS = process.env.AUDIT_PROGRESS ? path.resolve(ROOT, process.env.AUDIT_PROGRESS) : null;
+const T0 = Date.now();
+const stage = (msg) => {
+  if (PROGRESS) fs.appendFileSync(PROGRESS, Math.round((Date.now() - T0) / 1000) + "s " + msg + "\n");
+};
 
 const ALL_PAGES = [
   "index.html", "landing.html", "listings.html", "whats-here.html",
@@ -70,6 +79,20 @@ const chrome = spawn(CHROME, ["--headless=new", "--no-sandbox", "--disable-gpu",
   ...(MOTION ? [] : ["--force-prefers-reduced-motion"]), "--disable-dev-shm-usage", "--hide-scrollbars",
   "--remote-debugging-port=0", "--user-data-dir=" + PROFILE, "about:blank"],
   { stdio: "ignore", detached: true });
+
+/* Detached means the browser outlives this script — including when the script is
+   killed half-way, which is how one interrupted run left 85 headless Chromes
+   competing for the CPU. Close the whole process tree and delete the profile it
+   made (they reach 100 MB a run), on every way out of here. */
+function dispose() {
+  try {
+    if (process.platform === "win32") execSync("taskkill /PID " + chrome.pid + " /T /F", { stdio: "ignore" });
+    else process.kill(chrome.pid, "SIGKILL");
+  } catch (e) { /* already gone */ }
+  try { fs.rmSync(PROFILE, { recursive: true, force: true, maxRetries: 2 }); } catch (e) { /* locked */ }
+}
+process.on("exit", dispose);
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { dispose(); process.exit(130); });
 
 async function waitPort() {
   const f = path.join(PROFILE, "DevToolsActivePort");
@@ -109,6 +132,13 @@ const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: t
 await send("Page.enable", {}, sessionId);
 await send("Runtime.enable", {}, sessionId);
 await send("Log.enable", {}, sessionId);
+/* The guide's opening signboard is a one-time 3D animation that ends by removing
+   itself — which reflows the page while the audit is looking at it. Mark it seen
+   before any page script runs, on every navigation, so the measured page is the
+   settled page a returning visitor gets. (The in-page write below stays as the
+   fallback for a profile where this injection is unavailable.) */
+await send("Page.addScriptToEvaluateOnNewDocument", {
+  source: "try { localStorage.setItem('ichhapur.intro.seen', '1'); } catch (e) {}" }, sessionId);
 
 const ev = async (expr) => {
   const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true }, sessionId);
@@ -235,10 +265,23 @@ const PROBE = `(async () => {
        backdrop painted behind it — this CSS walk cannot see an <img> painted underneath */
     const t = textRect(el) || r;
     if (t.bottom <= 0 || t.right <= 0 || t.width < 2 || t.height < 2) continue;
+    /* A line box is taller than the letters in it, so on a tight pill the text
+       rect can reach the element's own 1px ring — and a border is not a
+       background any letter stands on. Keep the sample inside the box. */
+    const sx = Math.max(t.left, r.left + 2), sy = Math.max(t.top, r.top + 2);
+    const sxt = Math.min(t.right, r.right - 2), syb = Math.min(t.bottom, r.bottom - 2);
+    const sw = sxt - sx, sh = syb - sy;
+    const bx = sw >= 2 && sh >= 2 ? { l: sx, t: sy, w: sw, h: sh } : t;
+    /* tag the element so a later pass can come back to this exact node — the
+       pixel failures are printed with the box's geometry (element rect, text
+       rect, border, pseudo-elements) because a number that contradicts the CSS
+       is only worth arguing with once. */
+    el.setAttribute("data-audit-idx", String(boxes.length));
     boxes.push({
+      idx: boxes.length,
       sel, sample: sample.slice(0, 40), color: cs.color,
-      x: Math.max(0, Math.round(t.left + window.scrollX)), y: Math.max(0, Math.round(t.top + window.scrollY)),
-      w: Math.round(t.width), h: Math.round(t.height),
+      x: Math.max(0, Math.round(bx.l + window.scrollX)), y: Math.max(0, Math.round(bx.t + window.scrollY)),
+      w: Math.round(bx.w), h: Math.round(bx.h),
       need: ((parseFloat(cs.fontSize) || 16) >= 24 || ((parseFloat(cs.fontSize) || 16) >= 18.66 && (parseFloat(cs.fontWeight) || 400) >= 700)) ? 3 : 4.5,
     });
     const px = parseFloat(cs.fontSize) || 16;
@@ -379,14 +422,28 @@ const PROBE = `(async () => {
     }
   }
   const guard = {};
+  const anim = {};
   const files = [];
   for (const sheet of document.styleSheets) {
     let href = sheet.href; if (!href) continue;
     const file = href.replace(location.origin, "");
     if (files.includes(file)) continue; files.push(file);
-    let has = false;
-    try { for (const rule of sheet.cssRules || []) if (rule.conditionText && /prefers-reduced-motion/.test(rule.conditionText)) has = true; } catch (e) { has = null; }
+    let has = false, moves = false;
+    try {
+      for (const rule of sheet.cssRules || []) {
+        if (rule.conditionText && /prefers-reduced-motion/.test(rule.conditionText)) has = true;
+        /* A sheet only owes a reduced-motion block if it moves something: a
+           keyframes at-rule, or a rule that names animation/transition. The
+           four-rule WebGL stylesheet bends pixels and animates nothing, and
+           counting it as unguarded punished the honest answer — the alternative
+           was pasting an empty @media block into a file with no motion in it. */
+        if (rule.type === 7) moves = true;
+        const st = rule.style;
+        if (st && (st.getPropertyValue("animation-name") || st.getPropertyValue("transition-property"))) moves = true;
+      }
+    } catch (e) { has = null; }
     guard[file] = has;
+    anim[file] = moves;
   }
 
   const uniqAnchors = [...new Map(anchors.map((a) => [a.href, a])).values()];
@@ -399,7 +456,7 @@ const PROBE = `(async () => {
     anchors: uniqAnchors, external: [...new Set(external)], dead: [...new Set(dead)],
     boxes,
     meta: md,
-    motion: { running: [...new Set(running)], guard },
+    motion: { running: [...new Set(running)], guard, anim },
   };
 })()`;
 
@@ -466,10 +523,13 @@ const noise = [];
 
 for (const page of PAGES) {
   for (const vw of WIDTHS) {
+    const tag = page + "@" + vw.w;
+    stage("navigate " + tag);
     clearEvents();
     await send("Emulation.setDeviceMetricsOverride", { width: vw.w, height: vw.h, deviceScaleFactor: 1, mobile: vw.w < 500 }, sessionId);
     await send("Page.navigate", { url: BASE + page }, sessionId);
     await waitFor("Page.loadEventFired", sessionId, 25000);
+    stage("fonts " + tag);
     await ev("(async()=>{try{await document.fonts.ready}catch(e){}return 1})()");
     /* the guide plays a one-time 3D intro; sit it out so the audit sees the page */
     await ev("(async()=>{localStorage.setItem('ichhapur.intro.seen','1');return 1})()");
@@ -479,21 +539,201 @@ for (const page of PAGES) {
       for(let y=0;y<=H;y+=${Math.round(vw.h * 0.8)}){window.scrollTo({top:y,behavior:'instant'});await new Promise(r=>setTimeout(r,60));}
       window.scrollTo({top:0,behavior:'instant'});await new Promise(r=>setTimeout(r,250));return 1})()`);
     await sleep(250);
-
-    const r = await ev(PROBE);
+    /* A picture that arrives after its box has been measured moves every box
+       below it, and the pixel pass then reads colour from the wrong place — the
+       same page reported two different failures minutes apart until this was
+       pinned down. Wait for the lazy ones, then let the layout settle. Bounded,
+       because one stalled request must not stall the whole run. */
+    stage("settle " + tag);
+    await ev(`(async()=>{for(let k=0;k<2;k++){
+      const q=[...document.images].filter((i)=>!i.complete||!i.naturalHeight);
+      if(!q.length)break;
+      await Promise.race([Promise.all(q.map((i)=>i.decode().catch(()=>0))),
+        new Promise(r=>setTimeout(r,4000))]);}
+      await new Promise(r=>setTimeout(r,200));return 1})()`);
 
     /* --- pixel pass ----------------------------------------------------
        Make every glyph transparent, screenshot the whole page, then read the
        colour that is actually painted behind each text box. The CSS walk above
        cannot see a photograph or a canvas, so this is the ground truth — and it
        catches translucent glass over a picture, which the walk can only guess at.
-       deviceScaleFactor is 1, so page pixels and CSS pixels are the same grid. */
-    await ev("(() => { const st = document.createElement('style'); st.id = 'auditHide';" +
+       deviceScaleFactor is 1, so page pixels and CSS pixels are the same grid.
+
+       The order matters. The boxes the pixel pass reads are only true for the
+       layout the screenshot captured, and this page keeps moving after load: the
+       one-time intro settles, a late picture lands, a reveal finishes. A box
+       measured 12 px above where its pill finally came to rest samples the ring
+       of the element above it and reports a background no letter ever stood on
+       (that is what flagged `.badge--warn` at 3.44:1 while the CSS walk, the
+       clip and the computed colour all said 6:1). So: put the page on its
+       resting state, wait for the geometry to stop changing, shoot, then
+       measure — and re-do it if anything moved while the shutter was open.
+
+       Resting state is not the same as "paused". Pausing alone stopped a
+       nav-link colour transition at 7% alpha and the audit reported ivory text
+       on ivory — a frame no reader ever sees. `finish()` lands each one-shot
+       transition and entrance animation on the state it was heading to;
+       infinite loops (the ticker, the signboard rope) have no end state, so
+       they are paused afterwards. Everything is played back on when done. */
+    const FREEZE = `(() => {
+      const list = document.getAnimations();
+      let finished = 0, paused = 0;
+      for (const a of list) { try { a.finish(); finished++; } catch (e) {} }
+      for (const a of document.getAnimations()) { try { a.pause(); paused++; } catch (e) {} }
+      return finished + " finished, " + paused + " paused";
+    })()`;
+    const HIDE = "(() => { const st = document.createElement('style'); st.id = 'auditHide';" +
       "st.textContent = '*,*::before,*::after{color:transparent !important;-webkit-text-fill-color:transparent !important;text-shadow:none !important}';" +
-      "document.head.appendChild(st); return 1 })()");
-    const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true }, sessionId);
-    await ev("(() => { const s = document.getElementById('auditHide'); if (s) s.remove(); return 1 })()");
+      "document.head.appendChild(st); return 1 })()";
+    const SHOW = "(() => { const s = document.getElementById('auditHide'); if (s) s.remove(); return 1 })()";
+    stage("freeze " + tag + " " + (await ev(FREEZE)));
+    const SIG = `(() => {
+      const parts = [document.documentElement.scrollHeight, document.body.scrollHeight, window.scrollY];
+      const all = document.body ? [...document.body.querySelectorAll("*")] : [];
+      let h = 2166136261;
+      for (let i = 0; i < all.length; i++) {
+        const e = all[i];
+        if (e.tagName === "SCRIPT" || e.tagName === "STYLE") continue;
+        const r = e.getBoundingClientRect();
+        const s = Math.round(r.top) + "," + Math.round(r.left) + "," + Math.round(r.width) + "," + Math.round(r.height);
+        for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); }
+      }
+      return parts.join("|") + "|" + (h >>> 0).toString(36);
+    })()`;
+    let sig = null;
+    for (let k = 0; k < 8; k++) {
+      const s = await ev(SIG);
+      if (s === sig) break;
+      sig = s;
+      await sleep(450);
+    }
+    await ev(HIDE);
+    /* the hide style starts a colour transition of its own on anything that
+       animates `color` — snap that to its end too, or the shot catches glyphs
+       that are only half-transparent */
+    await ev(FREEZE);
+    let shot, r;
+    for (let round = 0; round < 3; round++) {
+      shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true }, sessionId);
+      stage("shot " + tag + " " + Math.round(shot.data.length / 1024) + "KB");
+      await ev(SHOW);
+      /* the colour has to come all the way back before it is read, or the walk
+         measures the return transition instead of the ink */
+      await ev(FREEZE);
+      r = await ev(PROBE);
+      if ((await ev(SIG)) === sig) break;
+      stage("re-shoot " + tag + " (layout still moving)");
+      /* name the mover: an element that never comes to rest is a defect worth
+         seeing, and a page that shifts between two reads only explains itself */
+      stage("  moved " + tag + " " + (await ev(`(() => {
+        const all = document.body ? [...document.body.querySelectorAll("*")] : [];
+        const prev = window.__sigRects || {}, cur = {}, out = [];
+        for (const e of all) {
+          if (e.tagName === "SCRIPT" || e.tagName === "STYLE") continue;
+          const r = e.getBoundingClientRect();
+          const k = e.tagName.toLowerCase() + "." + String(e.getAttribute("class") || "").slice(0, 26) + "#" + (e.id || "");
+          const v = Math.round(r.top) + "," + Math.round(r.left) + "," + Math.round(r.width) + "," + Math.round(r.height);
+          if (prev[k] !== undefined && prev[k] !== v && out.length < 4) out.push(k + ": " + prev[k] + " -> " + v);
+          cur[k] = v;
+        }
+        window.__sigRects = cur;
+        return out.join(" | ") || "(first read)";
+      })()`)));
+      sig = await ev(SIG);
+      await ev(HIDE);
+      await ev(FREEZE);
+    }
+    await ev(SHOW);
+    await ev(FREEZE);
     r.pixel = await ev(PIXEL(shot.data, r.boxes));
+    stage("pixels " + tag + " " + ((r.pixel && r.pixel.out) || []).length + " boxes");
+    /* Not resumed on purpose: the page is left with its one-shot animations on
+       their end state and its loops frozen, which is what the clip screenshots
+       below want to show. The next pass navigates, so nothing carries over. */
+
+    /* AUDIT_CLIP=tools/dir — save the neighbourhood of each pixel failure, so a
+       number that contradicts what the CSS says can be looked at instead of
+       argued with. */
+    if (process.env.AUDIT_CLIP && r.pixel.out) {
+      const ch = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+      const lu = (c) => 0.2126 * ch(c[0]) + 0.7152 * ch(c[1]) + 0.0722 * ch(c[2]);
+      const cmp = (a, b) => { const x = lu(a), y = lu(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const fails = [];
+      for (const s of r.pixel.out) {
+        const b = r.boxes[s.i];
+        const m = /rgba?\(([^)]+)\)/.exec(b.color); if (!m) continue;
+        const p = m[1].split(/[,/ ]+/).filter(Boolean).map(Number);
+        const tc = p.slice(0, 3), ta = p.length > 3 ? Math.min(1, p[3]) : 1;
+        let worst = Infinity;
+        for (const bg of s.s) worst = Math.min(worst, cmp(tc.map((v, k) => Math.round(v * ta + bg[k] * (1 - ta))), bg));
+        if (worst + 0.005 < b.need) fails.push([b, worst]);
+      }
+      for (let i = 0; i < Math.min(fails.length, 6); i++) {
+        const b = fails[i][0];
+        if (i === 0) {
+          /* what colours are actually in the sampled box, counted */
+          const hist = await ev(`(async () => {
+            const img = new Image(); img.src = "data:image/png;base64,${shot.data}"; await img.decode();
+            const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+            const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0);
+            const d = x.getImageData(${b.x}, ${b.y}, ${b.w}, ${b.h}).data;
+            const t = {};
+            for (let p = 0; p < d.length; p += 4) { const k = d[p] + "," + d[p + 1] + "," + d[p + 2];
+              t[k] = (t[k] || 0) + 1; }
+            const ch = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+            const lu = (c) => 0.2126 * ch(c[0]) + 0.7152 * ch(c[1]) + 0.0722 * ch(c[2]);
+            const rows = [];
+            for (let yy = 0; yy < ${b.h}; yy++) {
+              let dark = null, dl = Infinity, cnt = {};
+              for (let xx = 0; xx < ${b.w}; xx++) { const o = (yy * ${b.w} + xx) * 4;
+                const c3 = [d[o], d[o + 1], d[o + 2]]; const k = c3.join(",");
+                cnt[k] = (cnt[k] || 0) + 1;
+                const l = lu(c3); if (l < dl) { dl = l; dark = c3; } }
+              const top = Object.entries(cnt).sort((m, n) => n[1] - m[1])[0];
+              rows.push(yy + ":" + (${b.y} + yy) + " " + top[0] + "x" + top[1] + (dark.join(",") !== top[0] ? " dark " + dark.join(",") : ""));
+            }
+            return rows;
+          })()`);
+          console.log("  hist " + page + "@" + vw.w + " box " + b.x + "," + b.y + " " + b.w + "x" + b.h +
+            " " + JSON.stringify(hist));
+        }
+        const c = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true,
+          clip: { x: Math.max(0, b.x - 26), y: Math.max(0, b.y - 20), width: b.w + 52, height: b.h + 40, scale: 2 } }, sessionId);
+        const f = path.join(process.env.AUDIT_CLIP, page.replace(".html", "") + "-" + vw.w + "-clip" + i + ".png");
+        fs.mkdirSync(path.dirname(f), { recursive: true });
+        fs.writeFileSync(f, Buffer.from(c.data, "base64"));
+        console.log("  clip -> " + f + "  box " + b.x + "," + b.y + " " + b.w + "x" + b.h);
+        /* the box in the report is a *clamped text rect*, not the element: print
+           the element rect, the raw text rects and the ring so an unexplained
+           row of colour can be matched to the CSS that painted it. */
+        const geom = await ev(`(() => {
+          const el = document.querySelector('[data-audit-idx="${b.idx}"]');
+          if (!el) return "element gone";
+          const rr = el.getBoundingClientRect();
+          const cs = getComputedStyle(el);
+          const tn = [...el.childNodes].filter((n) => n.nodeType === 3 && n.nodeValue.trim());
+          let tr = [];
+          if (tn.length) { const rg = document.createRange();
+            rg.setStart(tn[0], 0); rg.setEnd(tn[tn.length - 1], tn[tn.length - 1].nodeValue.length);
+            tr = [...rg.getClientRects()].map((q) => [Math.round(q.top + scrollY), Math.round(q.bottom + scrollY), Math.round(q.left + scrollX), Math.round(q.width)]); }
+          const p = (pe) => { const s = getComputedStyle(el, pe); return s.content === "none" ? "none"
+            : [s.position, s.top, s.bottom, s.height, s.backgroundColor, s.backgroundImage.slice(0, 40), s.borderTopWidth].join(" "); };
+          const sib = [...el.parentElement.children].map((q) => q.tagName.toLowerCase() + "." + String(q.className).split(" ")[0]
+            + "@" + Math.round(q.getBoundingClientRect().top + scrollY) + "+" + Math.round(q.getBoundingClientRect().height));
+          return JSON.stringify({
+            box: [${b.y}, ${b.h}, ${b.x}, ${b.w}],
+            el: [Math.round(rr.top + scrollY), Math.round(rr.bottom + scrollY), Math.round(rr.left + scrollX), Math.round(rr.width), Math.round(rr.height)],
+            text: tr,
+            font: [cs.fontSize, cs.lineHeight, cs.paddingTop, cs.paddingBottom, cs.borderTopWidth, cs.borderTopColor, cs.backgroundColor, cs.display, cs.alignItems],
+            before: p("::before"), after: p("::after"),
+            parent: el.parentElement.tagName.toLowerCase() + "." + String(el.parentElement.className).split(" ")[0] + " " + sib.join(" | "),
+            clipTop: ${Math.max(0, b.y - 20)}, clipH: ${b.h + 40}, scale: 2
+          }, null, 1);
+        })()`);
+        console.log("  geom " + page + "@" + vw.w + " " + String(geom).replace(/\n/g, ""));
+      }
+      await ev("document.querySelectorAll('[data-audit-idx]').forEach(function (e) { e.removeAttribute('data-audit-idx'); }); return 1");
+    }
 
     const logs = events.filter((e) => e.method === "Log.entryAdded").map((e) => e.params.entry);
     const errors = logs.filter((l) => l.level === "error" && l.source !== "network")
@@ -572,6 +812,7 @@ function pixelScore(r) {
     }
     if (worst + 0.005 >= b.need) pass++;
     else fails.push({ sel: b.sel, got: +worst.toFixed(2), need: b.need, sample: b.sample,
+      at: b.x + "," + b.y + " " + b.w + "x" + b.h,
       fg: "rgb(" + wf.join(",") + ")", bg: "rgb(" + wb.join(",") + ")" });
   }
   return { tested, pass, failCount: fails.length, fails: fails.slice(0, 10) };
@@ -619,7 +860,8 @@ function scorePage(r) {
   parts.imgs = pct(r.alt.length - notLoaded.length - notDeclared.length, r.alt.length);
   r.imgProblems = { notLoaded: notLoaded.map((i) => i.src), notDeclared: notDeclared.map((i) => i.src + " (" + i.cls + ")") };
 
-  const guardFiles = Object.entries(r.motion.guard);
+  /* Only the sheets that move something are asked for a guard — see the probe. */
+  const guardFiles = Object.entries(r.motion.guard).filter(([f]) => r.motion.anim[f]);
   const guarded = guardFiles.filter(([, v]) => v === true).length;
   const unreadable = guardFiles.filter(([, v]) => v === null).length;
   const running = r.motion.running.length;
@@ -681,7 +923,7 @@ for (const r of results) {
   if (r.contrast.failCount > r.contrast.fails.length) problems.push([tag + " contrast more", ["+" + (r.contrast.failCount - r.contrast.fails.length) + " further failures"]]);
   /* the pixel pass reads the real rendered backdrop, so it also catches text over
      a photograph that the CSS walk had to mark untestable */
-  if (r.pixels.failCount) problems.push([tag + " contrast (rendered pixels)", r.pixels.fails.map((x) => x.sel + " " + x.got + ":1 need " + x.need + " [" + x.sample + "] fg " + x.fg + " on " + x.bg)]);
+  if (r.pixels.failCount) problems.push([tag + " contrast (rendered pixels)", r.pixels.fails.map((x) => x.sel + " " + x.got + ":1 need " + x.need + " [" + x.sample + "] fg " + x.fg + " on " + x.bg + " @" + x.at)]);
   if (r.pixels.failCount > r.pixels.fails.length) problems.push([tag + " contrast (pixels) more", ["+" + (r.pixels.failCount - r.pixels.fails.length) + " further failures"]]);
   if (r.overflow.wide.length) problems.push([tag + " overflow", ["scrollWidth " + r.overflow.docW, ...r.overflow.wide.map((x) => x.sel + " right " + x.right)]]);
   if (r.console.errors.length) problems.push([tag + " console", r.console.errors]);

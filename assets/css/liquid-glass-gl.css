@@ -1,0 +1,56 @@
+/* ============================================================================
+   ICHHAPUR Market — liquid-glass-gl.css
+   ----------------------------------------------------------------------------
+   The stylesheet side of the WebGL layer. It is four rules long on purpose.
+
+   liquid-glass-gl.js puts one `<canvas class="lg-gl-pane">` inside each plate it
+   paints — `.floatcard`, `.hero__chip`, `.shot__note` — the surfaces where what
+   sits behind the glass is a photograph the renderer can rebuild as a texture.
+   The pane arrives as the host's first child at `z-index: -1`, which inside an
+   isolated element paints above that element's own background and below its
+   content. That is the whole trick: there is no page-wide overlay canvas to
+   sandwich between a hero image and the words on it, nothing to re-stack, and
+   the glass travels with the plate wherever the plate lands.
+
+   Nothing here keys on a tier name. `data-glass` keeps saying `refract`, `frost`
+   or `solid` — the CSS material a browser can do on its own — and the two
+   attributes below are written by the renderer only while it is mounted. That is
+   why the WebGL glass can ride on top of any of those tiers instead of replacing
+   the word, and why a Safari or a machine with no WebGL2 changes nothing: the
+   attributes never appear, and this file has no opinion of its own.
+
+   Because the pane paints *over* the host's background rather than substituting
+   for it, every plate keeps its CSS fill, hairline and shadow. At slider 0 the
+   shader contributes nothing and a GL surface is the CSS surface exactly; at 100
+   the pane covers it with the bent material. A lost context unmounts and takes
+   both attributes with it, so the fallback is not a special case — it is the
+   only state this file ever had.
+   ========================================================================= */
+
+[data-gl-host] { isolation: isolate; }
+
+[data-gl-host] > .lg-gl-pane {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* A plate the shader has taken over must not also carry the CSS lens band: two
+   refracting rims round one surface sample the same backdrop twice, and the
+   second bend lands on pixels the first one already moved. The shader's edge is
+   solved from Snell's law across the plate's thickness, so that is the one that
+   stays. Chrome — the masthead, the back bar, the drawer, the sheet head — is
+   not a shader plate and keeps its band. */
+[data-gl-painted].lens::before { display: none; }
+
+@media print {
+  [data-gl-host] > .lg-gl-pane { display: none; }
+}
+
+@media (forced-colors: active) {
+  [data-gl-host] > .lg-gl-pane { display: none; }
+}
