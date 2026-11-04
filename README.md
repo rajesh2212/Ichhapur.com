@@ -1,4 +1,14 @@
 # ICHHAPUR Market — website
+**At a glance**
+
+| | |
+| --- | --- |
+| **For** | ICHHAPUR market, Ichhapur, Bhadrak, Odisha 756127 |
+| **Real, not simulated** | Eight pages rendered from one data file; listing confidence is stated per entry instead of invented |
+| **Runs** | Open `index.html`, or serve the folder with any static server |
+| **Checked** | Two Node scripts audit contrast, motion and data sync between the files |
+
+<p><img src="https://img.shields.io/badge/Vanilla-JS%20%2B%20CSS-f1e05a?style=flat-square&labelColor=1f2328&color=f1e05a" alt="Vanilla: JS + CSS" height="20"> <img src="https://img.shields.io/badge/Zero-dependencies-2ea44f?style=flat-square&labelColor=1f2328&color=2ea44f" alt="Zero: dependencies" height="20"> <img src="https://img.shields.io/badge/Audits-npm%20run%20check-005cc5?style=flat-square&labelColor=1f2328&color=005cc5" alt="Audits: npm run check" height="20"> <img src="https://img.shields.io/badge/Mobile-first-6f42c1?style=flat-square&labelColor=1f2328&color=6f42c1" alt="Mobile: first" height="20"></p>
 
 A mobile-first visitor guide to ICHHAPUR market (Ichhapur, Bhadrak, Odisha, 756127):
 what the market is, which stores and services are listed there, how confident each
