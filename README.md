@@ -10,6 +10,9 @@
 
 <p><img src="https://img.shields.io/badge/Vanilla-JS%20%2B%20CSS-f1e05a?style=flat-square&labelColor=1f2328&color=f1e05a" alt="Vanilla: JS + CSS" height="20"> <img src="https://img.shields.io/badge/Zero-dependencies-2ea44f?style=flat-square&labelColor=1f2328&color=2ea44f" alt="Zero: dependencies" height="20"> <img src="https://img.shields.io/badge/Audits-npm%20run%20check-005cc5?style=flat-square&labelColor=1f2328&color=005cc5" alt="Audits: npm run check" height="20"> <img src="https://img.shields.io/badge/Mobile-first-6f42c1?style=flat-square&labelColor=1f2328&color=6f42c1" alt="Mobile: first" height="20"></p>
 
+<p align="center"><img src="docs/screenshots/home.png" alt="The listings page running from source: cream palette, oversized display type, an illustration labelled as an illustration rather than a market photo" width="900"></p>
+
+
 A mobile-first visitor guide to ICHHAPUR market (Ichhapur, Bhadrak, Odisha, 756127):
 what the market is, which stores and services are listed there, how confident each
 listing is, and how to get directions.
